@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "xM API SDK (javascript)",
   "main": "index.js",
+  "files": [
+    "src/**/*.js",
+    "!src/**/*.test.js"
+  ],
   "scripts": {
     "test": "jest",
     "sandboxConfig": "cp sandbox/configTemplate.json sandbox/config.json",

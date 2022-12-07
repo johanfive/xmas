@@ -2,7 +2,7 @@ const CoreBuilder = require('./CoreBuilder');
 
 /**
  * Generate an object giving access to a collection of methods reusable across all endpoints
- * eg: getAll and getById can be used both in xmas.people.getAll and xmas.groups.getAll
+ * eg: getById can be used both in xmas.people.getById and xmas.groups.getById
  * @param {String} endpoint The xM API endpoint the request builder should default to.
  * eg: 'people' will produce requests with url: https://eg.xmatters.com/api/xm/1/people
  * @param {Object} requestor A reference to a Requestor initialized with the config before anything

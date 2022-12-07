@@ -1,4 +1,4 @@
-const Xmas = require('..');
+const Xmas = require('../src');
 const config = require('./config.json');
 
 const configUsernamePasswordOnly = {
