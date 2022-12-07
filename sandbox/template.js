@@ -32,12 +32,12 @@ const buildHttpClient = (resolve) => ({
       : Promise.reject({ statusCode: 555, data: { bim: 'badaboom' }});
   },
   successAdapter: (res) => res.data,
-  failureAdapter: (e) => { throw { status: e.statusCode, payload: e.data }},
+  failureAdapter: (e) => { throw { status: e.statusCode, payload: e.data }; }
 });
 
 const xmas = new Xmas({
   ...configUsernamePasswordOnly,
-  httpClient: buildHttpClient(true),
+  httpClient: buildHttpClient(true)
 });
 
 // xmas.getOauthTokens.byUsernamePassword()

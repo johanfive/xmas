@@ -34,7 +34,7 @@ const shapeRequest = (params) => {
   const req = {
     headers: buildHeaders(params),
     method: params.method,
-    url: buildUrl(params),
+    url: buildUrl(params)
   };
   if (params.data) {
     req.data = typeof params.data === 'string'
@@ -59,5 +59,5 @@ const handleAxiosRes = (res) => res.data;
 module.exports = {
   shapeRequest,
   handleAxiosError,
-  handleAxiosRes,
+  handleAxiosRes
 };

@@ -71,7 +71,7 @@ Requestor.prototype.getRetryOrRethrow = function(ogParams) {
     // e.payload is a clean and predictable error from the actual API response
     // e is a failsafe for any unforseen errors. Likely development errors or network issues
     throw e.payload || e;
-  }
+  };
 };
 
 Requestor.prototype.handleTokensChange = function(oAuthXmApiResponse) {
@@ -82,7 +82,7 @@ Requestor.prototype.handleTokensChange = function(oAuthXmApiResponse) {
     try {
       this.onTokensChange({
         accessToken: this.getAccessToken(),
-        refreshToken: this.getRefreshToken(),
+        refreshToken: this.getRefreshToken()
       });
     } catch (error) {
       // people don't read doc, so maybe always log?
@@ -101,20 +101,23 @@ Requestor.prototype.getOauthTokens = function(oauthPayload) {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
-    data: oauthPayload,
+    data: oauthPayload
   })
     .then((oAuthXmApiResponse) => this.handleTokensChange(oAuthXmApiResponse));
-    // ".then" doesn't work well with "this"
-    // can't do .then(this.handleTokensChange)
+  // ".then" doesn't work well with "this"
+  // can't do .then(this.handleTokensChange)
 };
 
 Requestor.prototype.refreshTokens = function() {
   // Might be useful to throw some:
   // "you're attempting to refresh OAuth tokens but you did not initiate xmas with a refreshToken"
   const oauthPayload = new URLSearchParams({
+    // eslint-disable-next-line camelcase
     grant_type: 'refresh_token',
+    // eslint-disable-next-line camelcase
     client_id: this.getClientId(),
-    refresh_token: this.getRefreshToken(),
+    // eslint-disable-next-line camelcase
+    refresh_token: this.getRefreshToken()
   }).toString();
   return this.getOauthTokens(oauthPayload);
 };
@@ -128,10 +131,12 @@ Requestor.prototype.byUsernamePassword = function() {
   return this.getClientId() ? Promise.resolve() : this.fetchClientId()
     .then(() => {
       const oauthPayload = new URLSearchParams({
+        // eslint-disable-next-line camelcase
         grant_type: 'password',
+        // eslint-disable-next-line camelcase
         client_id: this.getClientId(),
         username: this.username,
-        password: this.password,
+        password: this.password
       }).toString();
       return this.getOauthTokens(oauthPayload);
     });

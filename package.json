@@ -11,7 +11,8 @@
     "test": "jest",
     "sandboxConfig": "cp sandbox/configTemplate.json sandbox/config.json",
     "sandboxReset": "cp sandbox/template.js sandbox/index.js",
-    "sandbox": "node sandbox/"
+    "sandbox": "node sandbox/",
+    "lint": "eslint **/*.js"
   },
   "keywords": [
     "xMatters",
@@ -23,6 +24,7 @@
   "license": "ISC",
   "devDependencies": {
     "axios": "^1.2.1",
+    "eslint": "^8.29.0",
     "jest": "^29.3.1"
   }
 }

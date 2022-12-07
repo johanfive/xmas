@@ -28,7 +28,7 @@ CoreBuilder.prototype.depaginatedGet = function(ogParams) {
   const response = {
     count: 0,
     total: 0,
-    data: [],
+    data: []
   };
   function depaginate(params) {
     return that.get(params)
