@@ -8,32 +8,30 @@ const CoreBuilder = require('./CoreBuilder');
  * @param {Object} requestor A reference to a Requestor initialized with the config before anything
  * @returns {Object} a RequestBuilder with a collection of methods reusable across all endpoints
  */
-function RequestBuilder(endpoint, requestor) {
-  CoreBuilder.call(this, endpoint, requestor);
+class RequestBuilder extends CoreBuilder {
+  constructor(endpoint, requestor) {
+    super(endpoint, requestor);
+  }
+  getById(id, queryParams) {
+    return this.get({ pathParams: [id], queryParams });
+  }
+
+  search(searchTerm, queryParams) {
+    return this.get({ queryParams: { ...queryParams, search: searchTerm } });
+  }
+
+  create(resource) {
+    return this.post({ data: resource });
+  }
+
+  update(id, resource) {
+    return this.post({ data: { ...resource, id } });
+  }
+
+  // Common to both people and groups, so it belongs here
+  getSupervisorsOf(id, queryParams) {
+    return this.get({ pathParams: [id, 'supervisors'], queryParams });
+  }
 }
-
-RequestBuilder.prototype = new CoreBuilder();
-RequestBuilder.prototype.constructor = CoreBuilder;
-
-RequestBuilder.prototype.getById = function(id, queryParams) {
-  return this.get({ pathParams: [id], queryParams });
-};
-
-RequestBuilder.prototype.search = function(searchTerm, queryParams) {
-  return this.get({ queryParams: { ...queryParams, search: searchTerm } });
-};
-
-RequestBuilder.prototype.create = function(resource) {
-  return this.post({ data: resource });
-};
-
-RequestBuilder.prototype.update = function(id, resource) {
-  return this.post({ data: { ...resource, id } });
-};
-
-// Common to both people and groups, so it belongs here
-RequestBuilder.prototype.getSupervisorsOf = function(id, queryParams) {
-  return this.get({ pathParams: [id, 'supervisors'], queryParams });
-};
 
 module.exports = RequestBuilder;

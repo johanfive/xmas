@@ -1,42 +1,41 @@
 const RequestBuilder = require('../RequestBuilder');
 
-function People(requestor) {
-  RequestBuilder.call(this, 'People', requestor);
+class People extends RequestBuilder {
+  constructor(requestor) {
+    super('People', requestor);
+  }
+
+  getDevicesOf(personId, queryParams) {
+    return this.get({ pathParams: [personId, 'devices'], queryParams });
+  }
+
+  getGroupsOf(personId, queryParams) {
+    return this.get({ pathParams: [personId, 'group-memberships'], queryParams });
+  }
+
+  searchByFirstName(firstName, queryParams = {}) {
+    return this.get({ queryParams: { firstName, ...queryParams } });
+  }
+
+  searchByLastName(lastName, queryParams = {}) {
+    return this.get({ queryParams: { lastName, ...queryParams } });
+  }
+
+  searchByTargetName(targetName, queryParams = {}) {
+    return this.get({ queryParams: { targetName, ...queryParams } });
+  }
+
+  searchByWebLogin(webLogin, queryParams = {}) {
+    return this.get({ queryParams: { webLogin, ...queryParams } });
+  }
+
+  searchByPhoneNumber(phoneNumber, queryParams = {}) {
+    return this.get({ queryParams: { phoneNumber, ...queryParams } });
+  }
+
+  searchByEmail(emailAddress, queryParams = {}) {
+    return this.get({ queryParams: { emailAddress, ...queryParams } });
+  }
 }
-
-People.prototype = new RequestBuilder();
-People.prototype.constructor = RequestBuilder;
-
-People.prototype.getDevicesOf = function(personId, queryParams) {
-  return this.get({ pathParams: [personId, 'devices'], queryParams });
-};
-
-People.prototype.getGroupsOf = function(personId, queryParams) {
-  return this.get({ pathParams: [personId, 'group-memberships'], queryParams });
-};
-
-People.prototype.searchByFirstName = function(firstName, queryParams) {
-  return this.search(firstName, queryParams);
-};
-
-People.prototype.searchByLastName = function(lastName, queryParams) {
-  return this.search(lastName, queryParams);
-};
-
-People.prototype.searchByTargetName = function(targetName, queryParams) {
-  return this.search(targetName, queryParams);
-};
-
-People.prototype.searchByWebLogin = function(webLogin, queryParams) {
-  return this.search(webLogin, queryParams);
-};
-
-People.prototype.searchByPhoneNumber = function(phoneNumber, queryParams) {
-  return this.search(phoneNumber, queryParams);
-};
-
-People.prototype.searchByEmail = function(emailAddress, queryParams) {
-  return this.search(emailAddress, queryParams);
-};
 
 module.exports = People;

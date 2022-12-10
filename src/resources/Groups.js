@@ -10,11 +10,10 @@ const RequestBuilder = require('../RequestBuilder');
  * Generate an object giving access to a collection of methods strictly specific to group resources
  * @param {Object} requestor A reference to a Requestor initialized with the config before anything
  */
-function Groups(requestor) {
-  RequestBuilder.call(this, 'Groups', requestor);
+class Groups extends RequestBuilder {
+  constructor(requestor) {
+    super('Groups', requestor);
+  }
 }
-
-Groups.prototype = new RequestBuilder();
-Groups.prototype.constructor = RequestBuilder;
 
 module.exports = Groups;

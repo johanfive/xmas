@@ -1,7 +1,9 @@
 const nodePath = require('path');
 
 function buildUrl({ hostname, apiPath, endpoint, pathParams, queryParams }) {
-  const baseUrl = hostname + nodePath.join(apiPath, endpoint);
+  const [protocol, rest] = hostname.split('//');
+  const domain = rest || protocol;
+  const baseUrl = nodePath.join(domain, apiPath, endpoint);
   const path = pathParams ? pathParams.join('/') : '';
   const query = queryParams ? new URLSearchParams(queryParams).toString() : '';
   let url = baseUrl;
@@ -11,7 +13,7 @@ function buildUrl({ hostname, apiPath, endpoint, pathParams, queryParams }) {
   if (query) {
     url += '?' + query;
   }
-  return url;
+  return (/^https?:\/\//.test(protocol) ? protocol : 'https://') + url;
 }
 
 function buildAuth({ username, password, accessToken }) {
