@@ -1,10 +1,12 @@
 const RequestBuilder = require('./RequestBuilder');
 const Requestor = require('./Requestor');
+const { validateConfig } = require('./Requestor/utils');
 const Groups = require('./resources/Groups');
 const People = require('./resources/People');
 
 class Xmas extends RequestBuilder {
   constructor(config) {
+    validateConfig(config);
     // There is no getting smart with the requestor
     // the same reference must be used everywhere
     const requestor = new Requestor(config);

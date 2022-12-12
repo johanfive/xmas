@@ -3,6 +3,7 @@ const { shapeRequest, handleAxiosError, handleAxiosRes } = require('./utils');
 class Requestor {
   constructor(config) {
     this.httpClient = config.httpClient;
+    this.userAgent = config.userAgent;
     this.hostname = config.hostname;
     this.apiPath = '/api/xm/1';
     this.username = config.username;
@@ -36,6 +37,7 @@ class Requestor {
 
   execute(params) {
     const request = shapeRequest({
+      userAgent: this.userAgent,
       hostname: this.hostname,
       apiPath: this.apiPath,
       username: this.username,

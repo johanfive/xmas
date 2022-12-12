@@ -3,6 +3,7 @@ const config = require('./config.json');
 
 const configUsernamePasswordOnly = {
   hostname: config.hostname,
+  userAgent: config.userAgent,
   username: config.username,
   password: config.password,
   noisy: true
@@ -10,11 +11,13 @@ const configUsernamePasswordOnly = {
 
 // const configAuthorizationCodedOnly = {
 //   hostname: config.hostname,
+//   userAgent: config.userAgent,
 //   authorizationCode: config.authorizationCode,
 // };
 
 // const configTokensOnlyWithoutClientId = {
 //   hostname: config.hostname,
+//   userAgent: config.userAgent,
 //   accessToken: config.accessToken,
 //   refreshToken: config.refreshToken,
 //   onTokensChange: console.log

@@ -2,7 +2,7 @@
   "name": "xmas",
   "version": "1.0.0",
   "description": "xM API SDK (javascript)",
-  "main": "index.js",
+  "main": "src/index.js",
   "files": [
     "src/**/*.js",
     "!src/**/*.test.js"

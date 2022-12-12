@@ -1,9 +1,11 @@
 jest.mock('axios');
+jest.mock('../../package.json', () => ({ version: '8.8.8' }));
 const { default: axios } = require('axios');
 const Xmas = require('..');
 
 const config = {
   hostname: 'https://test.xmatters.com',
+  userAgent: { name: 'Unit tests', version: '5.5.5' },
   username: 'unit',
   password: 'test',
   noisy: false // default, but it's handy to have it togglable right here when drafting tests
@@ -15,7 +17,7 @@ const buildExpectedRequest = ({ headers, method, url, data }) => ({
   headers: headers || {
     'Content-Type': 'application/json; charset=utf-8',
     Authorization: 'Basic dW5pdDp0ZXN0',
-    'User-Agent': 'xmas(Johan)'
+    'User-Agent': 'Unit tests (5.5.5) | xmApiSdkJs (8.8.8)'
   },
   method,
   url,
@@ -155,11 +157,43 @@ describe('Xmas', () => {
           headers: {
             'Content-Type': 'application/json; charset=utf-8',
             Authorization: 'Bearer weWant',
-            'User-Agent': 'xmas(Johan)'
+            'User-Agent': 'Unit tests (5.5.5) | xmApiSdkJs (8.8.8)'
           },
           method: params.method,
           url: 'https://andImean/really/anything/override/however?we=like'
         }));
+      });
+  });
+  test('Auto add userAgent when consumer overrides them with an object', () => {
+    const params = {
+      headers: { custom: 'heddaz' }
+    };
+    return xmas.groups.get(params)
+      .then((res) => {
+        expect(res).toBe(xmApiRes);
+        expect(axios).toHaveBeenCalledWith(buildExpectedRequest({
+          headers: {
+            'User-Agent': 'Unit tests (5.5.5) | xmApiSdkJs (8.8.8)',
+            ...params.headers
+          },
+          method: 'GET',
+          url: 'https://test.xmatters.com/api/xm/1/groups'
+        }));
+      });
+  });
+  test('Allow requests with NO headers', () => {
+    const params = {
+      headers: null
+    };
+    const expectedReq = buildExpectedRequest({
+      method: 'GET',
+      url: 'https://test.xmatters.com/api/xm/1/groups'
+    });
+    delete expectedReq.headers;
+    return xmas.groups.get(params)
+      .then((res) => {
+        expect(res).toBe(xmApiRes);
+        expect(axios).toHaveBeenCalledWith(expectedReq);
       });
   });
 });

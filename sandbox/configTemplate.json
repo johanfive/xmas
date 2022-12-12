@@ -1,5 +1,9 @@
 {
   "hostname": "https://yourOrg.xmatters.com",
+  "userAgent": {
+    "name": "yourAppName",
+    "version": "yourAppVersion"
+  },
   "username": "",
   "password": "",
   "authorizationCode": "",
