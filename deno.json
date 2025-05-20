@@ -1,0 +1,33 @@
+{
+  "name": "@jfx/xmas",
+  "version": "1.0.0",
+  "license": "MIT",
+  "exports": {
+    ".": "./mod.ts"
+  },
+  "tasks": {
+    "test": "deno test",
+    "check": "deno check mod.ts"
+  },
+  "publish": {
+    "exclude": ["tests/"],
+    "include": ["src/", "mod.ts", "README.md", "LICENSE"]
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@1"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["deno.window", "deno.ns"]
+  },
+  "fmt": {
+    "files": {
+      "include": ["src/", "tests/", "mod.ts"]
+    },
+    "options": {
+      "lineWidth": 100,
+      "indentWidth": 2,
+      "singleQuote": true
+    }
+  }
+}

@@ -17,9 +17,9 @@ const config = {
 
 const xmas = new Xmas(config);
 
-// Add a new group to your xMatters instance:
-const nuGroup = { targetName: 'API developers' };
-xmas.groups.create(nuGroup)
+// Create a new group in your xMatters instance:
+const group = { targetName: 'API developers' };
+xmas.groups.create(group)
   .then(handleSuccess)
   .catch(handleError);
 ```
