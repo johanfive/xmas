@@ -52,11 +52,15 @@ export abstract class BaseApi {
     }
   }
 
-  protected get<T>(pathOrParams?: string | Record<string, string>): Promise<T> {
-    const [path, params] = typeof pathOrParams === 'string' 
-      ? [pathOrParams, undefined]
-      : [undefined, pathOrParams as Record<string, string>];
-    return this.request("GET", path!, undefined, params);
+  protected get<T>(): Promise<T>;
+  protected get<T>(params: Record<string, string>): Promise<T>;
+  protected get<T>(path: string): Promise<T>;
+  protected get<T>(path: string, params: Record<string, string>): Promise<T>;
+  protected get<T>(pathOrParams?: string | Record<string, string>, params?: Record<string, string>): Promise<T> {
+    if (typeof pathOrParams === 'object') {
+      return this.request("GET", "", null, pathOrParams);
+    }
+    return this.request("GET", pathOrParams || "", null, params);
   }
 
   protected post<T>(pathOrData?: string | unknown, data?: unknown): Promise<T> {
