@@ -75,7 +75,7 @@ export class XmApiError extends Error {
       body: string;
       status: number;
       headers: Record<string, string>;
-    }
+    },
   ) {
     super(message);
     this.name = 'XmApiError';

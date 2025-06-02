@@ -1,12 +1,12 @@
 import {
+  DeleteOptions,
+  GetOptions,
   HttpClient,
   HttpRequest,
   HttpResponse,
   Logger,
-  XmApiError,
-  GetOptions,
   RequestWithBodyOptions,
-  DeleteOptions,
+  XmApiError,
 } from './types.ts';
 
 export class DefaultHttpClient implements HttpClient {
@@ -56,7 +56,6 @@ export class RequestBuilder {
   build(request: Partial<HttpRequest> & { path: string }): HttpRequest {
     const fullPath = `${this.apiVersionPath}${request.path}`;
     const url = new URL(fullPath, this.baseUrl);
-    
     // Add query parameters if present in the request
     if (request.query) {
       Object.entries(request.query).forEach(([key, value]) => {
@@ -65,7 +64,6 @@ export class RequestBuilder {
         }
       });
     }
-
     return {
       method: request.method || 'GET',
       path: request.path,
@@ -84,7 +82,10 @@ export class HttpHandler {
     private readonly logger: Logger,
     private readonly requestBuilder: RequestBuilder,
     private readonly maxRetries: number = 3,
-    private readonly onTokenRefresh?: (accessToken: string, refreshToken: string) => void | Promise<void>,
+    private readonly onTokenRefresh?: (
+      accessToken: string,
+      refreshToken: string,
+    ) => void | Promise<void>,
   ) {}
 
   private async refreshToken(): Promise<void> {
@@ -92,15 +93,22 @@ export class HttpHandler {
     return Promise.reject(new Error('Token refresh not implemented'));
   }
 
-  async send<T>(request: Partial<HttpRequest> & { path: string; method?: HttpRequest['method'] }): Promise<HttpResponse<T>> {
+  async send<T>(
+    request: Partial<HttpRequest> & {
+      path: string;
+      method?: HttpRequest['method'];
+    },
+  ): Promise<HttpResponse<T>> {
     const req = this.requestBuilder.build(request);
-    
+
     try {
       this.logger.debug('Sending request', { request: req });
       const response = await this.client.send(req);
       this.logger.debug('Received response', { response });
 
-      if (response.status === 401 && this.onTokenRefresh && req.retryAttempt === 0) {
+      if (
+        response.status === 401 && this.onTokenRefresh && req.retryAttempt === 0
+      ) {
         await this.refreshToken();
         return this.send({ ...request, retryAttempt: 1 });
       }

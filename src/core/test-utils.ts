@@ -1,4 +1,11 @@
-import { HttpClient, HttpRequest, HttpResponse, Logger, XmApiError, XmApiOptions } from './types.ts';
+import {
+  HttpClient,
+  HttpRequest,
+  HttpResponse,
+  Logger,
+  XmApiError,
+  XmApiOptions,
+} from './types.ts';
 import { HttpHandler, RequestBuilder } from './http.ts';
 
 class MockRequestBuilder extends RequestBuilder {
@@ -26,21 +33,24 @@ export class MockHttpHandler extends HttpHandler {
   constructor(responses: HttpResponse | HttpResponse[]) {
     // Create minimal implementations for required dependencies
     const mockClient: HttpClient = {
-      send: () => Promise.resolve({ status: 200, headers: {}, body: {} })
+      send: () => Promise.resolve({ status: 200, headers: {}, body: {} }),
     };
     const mockLogger: Logger = {
       debug: () => {},
       info: () => {},
       warn: () => {},
-      error: () => {}
+      error: () => {},
     };
     const mockRequestBuilder = new MockRequestBuilder();
-    
+
     super(mockClient, mockLogger, mockRequestBuilder);
     this.responses = Array.isArray(responses) ? responses : [responses];
   }
 
-  override async send<T>(request: Partial<HttpRequest> & { path: string; method?: HttpRequest['method'] }): Promise<HttpResponse<T>> {
+  // deno-lint-ignore require-await
+  override async send<T>(
+    request: Partial<HttpRequest> & { path: string; method?: HttpRequest['method'] },
+  ): Promise<HttpResponse<T>> {
     const fullRequest: HttpRequest = {
       method: request.method || 'GET',
       path: request.path,
@@ -52,9 +62,10 @@ export class MockHttpHandler extends HttpHandler {
     };
 
     this.requests.push(fullRequest);
-    
-    const response = this.responses[this.requests.length - 1] || this.responses[this.responses.length - 1];
-    
+
+    const response = this.responses[this.requests.length - 1] ||
+      this.responses[this.responses.length - 1];
+
     // If status >= 400, throw an XmApiError
     if (response.status >= 400) {
       throw new XmApiError(
@@ -66,34 +77,61 @@ export class MockHttpHandler extends HttpHandler {
         },
       );
     }
-    
+
     return response as HttpResponse<T>;
   }
 }
 
-export function createMockOptions(options: Partial<XmApiOptions> = {}): XmApiOptions {
-  if ('accessToken' in options) {
-    return {
-      hostname: 'https://example.com',
-      accessToken: 'mock-token',
-      ...options,
-    };
-  }
+export interface CreateMockResponseOptions<T> {
+  /** The response body */
+  body: T;
+  /** The HTTP status code */
+  status?: number;
+  /** Response headers */
+  headers?: Record<string, string>;
+}
+
+export function createMockResponse<T>(options: CreateMockResponseOptions<T>): HttpResponse<T> {
   return {
-    hostname: 'https://example.com',
-    username: 'mock-user',
-    password: 'mock-password',
-    ...options,
+    body: options.body,
+    status: options.status ?? 200,
+    headers: {
+      'content-type': 'application/json',
+      ...options.headers,
+    },
   };
 }
 
-export function createMockResponse<T>(body: T, status = 200, headers: Record<string, string> = {}): HttpResponse<T> {
+export interface CreateMockOptionsConfig {
+  /** Optional base URL for the mock API. Defaults to https://example.com */
+  mockBaseUrl?: string;
+  /** OAuth configuration */
+  oauth?: {
+    accessToken?: string;
+    refreshToken?: string;
+    clientId?: string;
+  };
+  /** Basic Auth configuration */
+  basicAuth?: {
+    username?: string;
+    password?: string;
+  };
+}
+
+export function createMockOptions(config: CreateMockOptionsConfig = {}): XmApiOptions {
+  const { mockBaseUrl = 'https://example.com' } = config;
+
+  if (config.oauth) {
+    return {
+      hostname: mockBaseUrl,
+      accessToken: config.oauth.accessToken ?? 'mock-token',
+      refreshToken: config.oauth.refreshToken,
+      clientId: config.oauth.clientId,
+    };
+  }
   return {
-    body,
-    status,
-    headers: {
-      'content-type': 'application/json',
-      ...headers,
-    },
+    hostname: mockBaseUrl,
+    username: config.basicAuth?.username ?? 'mock-user',
+    password: config.basicAuth?.password ?? 'mock-password',
   };
 }

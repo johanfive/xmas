@@ -3,6 +3,10 @@
     "std/": "https://deno.land/std@0.193.0/"
   },
   "tasks": {
-    "test": "deno test --allow-net"
+    "test": "deno test"
+  },
+  "fmt": {
+    "singleQuote": true,
+    "lineWidth": 100
   }
 }
