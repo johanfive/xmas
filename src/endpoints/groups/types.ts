@@ -1,3 +1,5 @@
+import { PaginatedResponse, WithPagination, WithSearch } from '../../core/types.ts';
+
 /**
  * Represents a group in xMatters.
  */
@@ -61,29 +63,9 @@ export interface Group {
 }
 
 /**
- * Parameters for the getGroups endpoint.
- * Used to filter and paginate the list of groups.
+ * Specific filter parameters for the getGroups endpoint
  */
-export interface GetGroupsParams {
-  /**
-   * The maximum number of records to return.
-   * @default 100
-   */
-  limit?: number;
-
-  /**
-   * The number of records to skip.
-   * Used for pagination in combination with limit.
-   * @default 0
-   */
-  offset?: number;
-
-  /**
-   * A string used to filter records by matching on all or part of a group name.
-   * The search is case-insensitive and matches any part of the group name.
-   */
-  search?: string;
-
+export interface GroupFilters extends Record<string, unknown> {
   /**
    * Filter records by matching on the exact value of targetName.
    * This is case-sensitive and must match the group name exactly.
@@ -91,13 +73,13 @@ export interface GetGroupsParams {
   targetName?: string;
 }
 
-export interface GetGroupsResponse {
-  count: number;
-  total: number;
-  data: Group[];
-  links?: {
-    self: string;
-    next?: string;
-    prev?: string;
-  };
-}
+/**
+ * Parameters for the getGroups endpoint.
+ * Combines common pagination and search with group-specific filters.
+ */
+export type GetGroupsParams = WithPagination<WithSearch<GroupFilters>>;
+
+/**
+ * Response type for the getGroups endpoint.
+ */
+export type GetGroupsResponse = PaginatedResponse<Group>;

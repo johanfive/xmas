@@ -112,3 +112,153 @@ export interface RequestWithBodyOptions extends HttpMethodOptions {
  * Options for DELETE requests
  */
 export type DeleteOptions = HttpMethodOptions;
+
+/**
+ * Common pagination parameters used across many endpoints
+ */
+export interface PaginationParams {
+  /**
+   * The maximum number of records to return
+   * @default 100
+   */
+  limit?: number;
+
+  /**
+   * The number of records to skip
+   * Used for pagination in combination with limit
+   * @default 0
+   */
+  offset?: number;
+}
+
+/**
+ * Common search parameters used across many endpoints
+ */
+export interface SearchParams {
+  /**
+   * A string used to filter records by matching on names or other searchable fields
+   * The search is typically case-insensitive and matches any part of the searchable fields
+   */
+  search?: string;
+}
+
+/**
+ * Common sorting parameters used across many endpoints
+ */
+export interface SortParams {
+  /**
+   * Field to sort by
+   */
+  sortBy?: string;
+
+  /**
+   * Sort direction
+   * @default 'ASC'
+   */
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+/**
+ * Helper type to add pagination to endpoint parameters
+ */
+export type WithPagination<T extends Record<string, unknown> = Record<string, never>> =
+  & T
+  & PaginationParams;
+
+/**
+ * Helper type to add search capability to endpoint parameters
+ */
+export type WithSearch<T extends Record<string, unknown> = Record<string, never>> =
+  & T
+  & SearchParams;
+
+/**
+ * Helper type to add sorting to endpoint parameters
+ */
+export type WithSort<T extends Record<string, unknown> = Record<string, never>> = T & SortParams;
+
+/**
+ * Common response wrapper for paginated lists
+ */
+export interface PaginatedResponse<T> {
+  /** Number of items in this response */
+  count: number;
+  /** Total number of items available */
+  total: number;
+  /** The items for this page */
+  data: T[];
+  /** HAL links for navigation */
+  links?: {
+    /** URL to current page */
+    self: string;
+    /** URL to next page, if available */
+    next?: string;
+    /** URL to previous page, if available */
+    prev?: string;
+  };
+}
+
+/**
+ * Common type utilities for building endpoint parameter types.
+ *
+ * @example Simple paginated endpoint
+ * ```typescript
+ * interface DeviceFilters extends Record<string, unknown> {
+ *   status?: 'ACTIVE' | 'INACTIVE';
+ * }
+ *
+ * type GetDevicesParams = WithPagination<DeviceFilters>;
+ * // Results in:
+ * // {
+ * //   status?: 'ACTIVE' | 'INACTIVE';
+ * //   limit?: number;
+ * //   offset?: number;
+ * // }
+ * ```
+ *
+ * @example Endpoint with search and pagination
+ * ```typescript
+ * interface UserFilters extends Record<string, unknown> {
+ *   role?: string;
+ * }
+ *
+ * // Compose multiple parameter types
+ * type GetUsersParams = WithPagination<WithSearch<UserFilters>>;
+ * // Results in:
+ * // {
+ * //   role?: string;
+ * //   search?: string;
+ * //   limit?: number;
+ * //   offset?: number;
+ * // }
+ * ```
+ *
+ * @example Full endpoint type definition
+ * ```typescript
+ * // 1. Define your resource type
+ * interface User {
+ *   id: string;
+ *   name: string;
+ *   // ...other properties
+ * }
+ *
+ * // 2. Define endpoint-specific filters
+ * interface UserFilters extends Record<string, unknown> {
+ *   role?: string;
+ *   status?: 'ACTIVE' | 'INACTIVE';
+ * }
+ *
+ * // 3. Compose parameter types with pagination, search, and sort
+ * type GetUsersParams = WithPagination<WithSearch<WithSort<UserFilters>>>;
+ *
+ * // 4. Use the generic paginated response
+ * type GetUsersResponse = PaginatedResponse<User>;
+ *
+ * // Now you can implement your endpoint:
+ * class UsersEndpoint {
+ *   async getUsers(params?: GetUsersParams): Promise<GetUsersResponse> {
+ *     return this.http.get({ path: '/users', query: params });
+ *   }
+ * }
+ * ```
+ */
