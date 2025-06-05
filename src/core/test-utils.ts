@@ -29,11 +29,12 @@ class MockRequestBuilder extends RequestBuilder {
 export class MockHttpHandler extends HttpHandler {
   public readonly requests: HttpRequest[] = [];
   private readonly responses: HttpResponse[];
+  public forceError?: Error;
 
   constructor(responses: HttpResponse | HttpResponse[]) {
     // Create minimal implementations for required dependencies
     const mockClient: HttpClient = {
-      send: () => Promise.resolve({ status: 200, headers: {}, body: {} }),
+      send: async () => ({ status: 200, headers: {}, body: {} }),
     };
     const mockLogger: Logger = {
       debug: () => {},
@@ -47,38 +48,92 @@ export class MockHttpHandler extends HttpHandler {
     this.responses = Array.isArray(responses) ? responses : [responses];
   }
 
-  // deno-lint-ignore require-await
   override async send<T>(
     request: Partial<HttpRequest> & { path: string; method?: HttpRequest['method'] },
   ): Promise<HttpResponse<T>> {
-    const fullRequest: HttpRequest = {
-      method: request.method || 'GET',
-      path: request.path,
-      url: request.url || `https://example.com${request.path}`,
-      query: request.query,
-      headers: request.headers,
-      body: request.body,
-      retryAttempt: request.retryAttempt || 0,
-    };
+    try {
+      const fullRequest: HttpRequest = {
+        method: request.method || 'GET',
+        path: request.path,
+        url: request.url || `https://example.com${request.path}`,
+        query: request.query,
+        headers: request.headers,
+        body: request.body,
+        retryAttempt: request.retryAttempt || 0,
+      };
 
-    this.requests.push(fullRequest);
+      this.requests.push(fullRequest);
 
-    const response = this.responses[this.requests.length - 1] ||
-      this.responses[this.responses.length - 1];
+      // If forceError is set, throw it as an XmApiError
+      if (this.forceError) {
+        throw new XmApiError('Request failed', undefined, this.forceError);
+      }
 
-    // If status >= 400, throw an XmApiError
-    if (response.status >= 400) {
-      throw new XmApiError(
-        `Request failed with status ${response.status}`,
-        {
-          status: response.status,
-          headers: response.headers,
-          body: typeof response.body === 'string' ? response.body : JSON.stringify(response.body),
-        },
-      );
+      const currentAttempt = fullRequest.retryAttempt ?? 0;
+      const currentResponse = this.responses[currentAttempt];
+      if (!currentResponse) {
+        throw new XmApiError('No mock response available for request');
+      }
+
+      // For retryable responses (429 or 5xx), check if we have a next response
+      if (
+        (currentResponse.status === 429 ||
+          (currentResponse.status >= 500 && currentResponse.status < 600)) &&
+        this.responses[currentAttempt + 1]
+      ) {
+        // For rate limits, respect the Retry-After header
+        if (currentResponse.status === 429 && currentResponse.headers['retry-after']) {
+          const retryAfter = parseInt(currentResponse.headers['retry-after'], 10);
+          if (!isNaN(retryAfter)) {
+            await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+          }
+        }
+
+        // Retry the request with the next response
+        return this.send<T>({
+          ...request,
+          retryAttempt: currentAttempt + 1,
+        });
+      }
+
+      // For non-retryable errors or if we're out of responses, throw an error
+      if (currentResponse.status >= 400) {
+        let message = `Request failed with status ${currentResponse.status}`;
+        if (
+          currentResponse.body && typeof currentResponse.body === 'object' &&
+          'message' in currentResponse.body
+        ) {
+          message = String(currentResponse.body.message);
+        } else if (typeof currentResponse.body === 'string' && currentResponse.body.trim()) {
+          message = currentResponse.body.trim();
+        }
+
+        if (
+          currentResponse.body && typeof currentResponse.body === 'object' &&
+          'code' in currentResponse.body
+        ) {
+          message = `${currentResponse.body.code}: ${message}`;
+        }
+
+        throw new XmApiError(
+          message,
+          {
+            status: currentResponse.status,
+            headers: currentResponse.headers,
+            body: typeof currentResponse.body === 'string'
+              ? currentResponse.body
+              : JSON.stringify(currentResponse.body),
+          },
+        );
+      }
+
+      return currentResponse as HttpResponse<T>;
+    } catch (error) {
+      if (error instanceof XmApiError) {
+        throw error;
+      }
+      throw new XmApiError('Request failed', undefined, error);
     }
-
-    return response as HttpResponse<T>;
   }
 }
 

@@ -2,10 +2,12 @@ import {
   assertEquals,
   assertExists,
   assertObjectMatch,
+  assertStringIncludes,
 } from 'https://deno.land/std@0.193.0/testing/asserts.ts';
 import { GroupsEndpoint } from './index.ts';
 import { GetGroupsResponse } from './types.ts';
 import { createMockResponse, MockHttpHandler } from '../../core/test-utils.ts';
+import { XmApiError } from '../../core/types.ts';
 
 const mockGroup = {
   id: '123',
@@ -36,17 +38,18 @@ const mockGroupsResponse: GetGroupsResponse = {
 
 Deno.test('GroupsEndpoint', async (t) => {
   await t.step('getGroups without parameters', async () => {
-    const mockHttp = new MockHttpHandler(createMockResponse({
+    const mockResponse = createMockResponse({
       body: mockGroupsResponse,
       headers: {
         'content-type': 'application/json',
       },
-    }));
+    });
+    const mockHttp = new MockHttpHandler(mockResponse);
     const endpoint = new GroupsEndpoint(mockHttp);
 
     const response = await endpoint.getGroups();
 
-    assertEquals(response, mockGroupsResponse);
+    assertEquals(response.body, mockGroupsResponse);
     assertEquals(mockHttp.requests.length, 1);
 
     const request = mockHttp.requests[0];
@@ -56,18 +59,19 @@ Deno.test('GroupsEndpoint', async (t) => {
   });
 
   await t.step('getGroups with parameters', async () => {
-    const mockHttp = new MockHttpHandler(createMockResponse({
+    const mockResponse = createMockResponse({
       body: mockGroupsResponse,
       headers: {
         'content-type': 'application/json',
       },
-    }));
+    });
+    const mockHttp = new MockHttpHandler(mockResponse);
     const endpoint = new GroupsEndpoint(mockHttp);
 
     const params = { limit: 10, offset: 0, search: 'test' };
     const response = await endpoint.getGroups(params);
 
-    assertEquals(response, mockGroupsResponse);
+    assertEquals(response.body, mockGroupsResponse);
     assertEquals(mockHttp.requests.length, 1);
 
     const request = mockHttp.requests[0];
@@ -96,11 +100,130 @@ Deno.test('GroupsEndpoint', async (t) => {
         throw new Error('Expected XmApiError but got: ' + String(error));
       }
       assertEquals(error.name, 'XmApiError');
-      assertEquals(error.message, 'Request failed with status 404');
+      assertEquals(error.message, 'Not Found');
       // Type assertion since we know it's an XmApiError
-      const xmError = error as { response?: { status: number } };
+      const xmError = error as XmApiError;
       assertExists(xmError.response);
       assertEquals(xmError.response.status, 404);
+    }
+  });
+});
+
+Deno.test('GroupsEndpoint error handling', async (t) => {
+  await t.step('retries on rate limit with Retry-After', async () => {
+    const rateLimitResponse = createMockResponse({
+      body: { message: 'Too many requests' },
+      status: 429,
+      headers: {
+        'retry-after': '2',
+        'content-type': 'application/json',
+      },
+    });
+    const successResponse = createMockResponse({
+      body: mockGroupsResponse,
+      headers: {
+        'content-type': 'application/json',
+      },
+    });
+
+    const mockHttp = new MockHttpHandler([rateLimitResponse, successResponse]);
+    const endpoint = new GroupsEndpoint(mockHttp);
+
+    const response = await endpoint.getGroups();
+    assertEquals(response.body, mockGroupsResponse);
+    assertEquals(mockHttp.requests.length, 2);
+
+    // Verify retry was attempted
+    const [firstRequest, retryRequest] = mockHttp.requests;
+    assertEquals(firstRequest.retryAttempt, 0);
+    assertEquals(retryRequest.retryAttempt, 1);
+  });
+
+  await t.step('handles detailed error responses', async () => {
+    const errorResponse = createMockResponse({
+      body: {
+        code: 'VALIDATION_ERROR',
+        message: 'Invalid input',
+        details: [
+          { field: 'targetName', message: 'Must not be empty' },
+        ],
+      },
+      status: 400,
+      headers: {
+        'content-type': 'application/json',
+        'request-id': 'test-123',
+      },
+    });
+    const mockHttp = new MockHttpHandler(errorResponse);
+    const endpoint = new GroupsEndpoint(mockHttp);
+
+    try {
+      await endpoint.getGroups();
+      throw new Error('Expected error to be thrown');
+    } catch (error) {
+      assertExists(error);
+      assertEquals(error instanceof XmApiError, true);
+      const xmError = error as XmApiError;
+
+      // Verify error message has all the context
+      assertEquals(xmError.message, 'VALIDATION_ERROR: Invalid input');
+
+      // Verify response is preserved
+      assertExists(xmError.response);
+      assertEquals(xmError.response.status, 400);
+      assertEquals(xmError.response.headers['request-id'], 'test-123');
+    }
+  });
+
+  await t.step('handles errors without response body', async () => {
+    const errorResponse = createMockResponse({
+      body: '', // Empty response body
+      status: 502,
+      headers: {
+        'content-type': 'text/plain',
+      },
+    });
+    const mockHttp = new MockHttpHandler(errorResponse);
+    const endpoint = new GroupsEndpoint(mockHttp);
+
+    try {
+      await endpoint.getGroups();
+      throw new Error('Expected error to be thrown');
+    } catch (error) {
+      assertExists(error);
+      assertEquals(error instanceof XmApiError, true);
+      const xmError = error as XmApiError;
+
+      // Verify fallback error message
+      assertStringIncludes(xmError.message, '502');
+      assertExists(xmError.response);
+      assertEquals(xmError.response.status, 502);
+      assertEquals(xmError.response.body, '');
+    }
+  });
+
+  await t.step('handles network errors', async () => {
+    const mockHttp = new MockHttpHandler({
+      status: 0, // No status indicates network error
+      headers: {},
+      body: undefined,
+    });
+    mockHttp.forceError = new Error('Network error');
+
+    const endpoint = new GroupsEndpoint(mockHttp);
+
+    try {
+      await endpoint.getGroups();
+      throw new Error('Expected error to be thrown');
+    } catch (error) {
+      assertExists(error);
+      assertEquals(error instanceof XmApiError, true);
+      const xmError = error as XmApiError;
+
+      assertEquals(xmError.message, 'Request failed');
+      assertEquals(xmError.response, undefined);
+      assertEquals(xmError.cause instanceof Error, true);
+      assertStringIncludes((xmError.cause as Error).message, 'Network error');
     }
   });
 });

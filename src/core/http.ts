@@ -8,13 +8,28 @@ import {
   RequestWithBodyOptions,
   XmApiError,
 } from './types.ts';
+import { TokenData, TokenState } from './oauth-types.ts';
 
 export class DefaultHttpClient implements HttpClient {
   async send(request: HttpRequest): Promise<HttpResponse> {
+    // Handle body serialization based on content type
+    let serializedBody: string | undefined;
+    const contentType = request.headers?.['content-type'];
+    if (request.body) {
+      if (contentType?.includes('application/json')) {
+        serializedBody = JSON.stringify(request.body);
+      } else if (typeof request.body === 'string') {
+        serializedBody = request.body;
+      } else {
+        // Default to JSON if no content type specified
+        serializedBody = JSON.stringify(request.body);
+      }
+    }
+
     const response = await fetch(request.url, {
       method: request.method,
       headers: request.headers,
-      body: request.body ? JSON.stringify(request.body) : undefined,
+      body: serializedBody,
     });
 
     const headers: Record<string, string> = {};
@@ -23,9 +38,14 @@ export class DefaultHttpClient implements HttpClient {
     });
 
     let body: unknown;
-    const contentType = headers['content-type'];
-    if (contentType?.includes('application/json')) {
-      body = await response.json();
+    const responseType = headers['content-type'];
+    if (responseType?.includes('application/json')) {
+      try {
+        body = await response.json();
+      } catch (e) {
+        // If JSON parsing fails, fall back to text
+        body = await response.text();
+      }
     } else {
       body = await response.text();
     }
@@ -64,7 +84,8 @@ export class RequestBuilder {
         }
       });
     }
-    return {
+
+    const builtRequest: HttpRequest = {
       method: request.method || 'GET',
       path: request.path,
       url: url.toString(),
@@ -73,10 +94,47 @@ export class RequestBuilder {
       body: request.body,
       retryAttempt: request.retryAttempt || 0,
     };
+
+    return builtRequest;
   }
 }
 
 export class HttpHandler {
+  /** Current token state if using OAuth */
+  private tokenState?: TokenState;
+
+  /**
+   * Helper method to safely convert a response body to a string for error messages
+   */
+  private stringifyErrorBody(body: unknown): string {
+    if (typeof body === 'string') {
+      return body;
+    }
+    if (body && typeof body === 'object') {
+      try {
+        return JSON.stringify(body);
+      } catch {
+        return '[Unable to stringify error body]';
+      }
+    }
+    return String(body ?? '[No error details available]');
+  }
+
+  /**
+   * Helper method to create an error response
+   */
+  private createErrorResponse(response: HttpResponse): {
+    body: string;
+    status: number;
+    headers: Record<string, string>;
+  } {
+    return {
+      body: this.stringifyErrorBody(response.body),
+      status: response.status,
+      headers: response.headers,
+    };
+  }
+
   constructor(
     private readonly client: HttpClient,
     private readonly logger: Logger,
@@ -86,11 +144,110 @@ export class HttpHandler {
       accessToken: string,
       refreshToken: string,
     ) => void | Promise<void>,
-  ) {}
+    tokenData?: TokenData,
+  ) {
+    // If we have token data, initialize token state
+    if (tokenData) {
+      this.tokenState = {
+        ...tokenData,
+        // Set a default expiry 5 minutes from now - we'll get the real value on first refresh
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        scopes: [],
+        clientId: tokenData.clientId,
+      };
+    }
+  }
+
+  private isTokenExpired(): boolean {
+    if (!this.tokenState) return false;
+    const expiresAt = new Date(this.tokenState.expiresAt);
+    // Consider token expired if it expires in less than 30 seconds
+    return expiresAt.getTime() - Date.now() <= 30 * 1000;
+  }
 
   private async refreshToken(): Promise<void> {
-    // TODO: Implement token refresh logic
-    return Promise.reject(new Error('Token refresh not implemented'));
+    try {
+      if (!this.tokenState?.refreshToken) {
+        throw new XmApiError('No refresh token available for token refresh');
+      }
+
+      const params = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: this.tokenState.refreshToken,
+      });
+
+      // Add client ID if available (required for some OAuth2 servers)
+      if (this.tokenState.clientId) {
+        params.append('client_id', this.tokenState.clientId);
+      }
+
+      const refreshRequest = this.requestBuilder.build({
+        method: 'POST',
+        path: '/oauth2/token',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+        },
+        body: params.toString(),
+      });
+
+      const response = await this.client.send(refreshRequest);
+
+      if (response.status !== 200 || !response.body) {
+        throw new XmApiError('Failed to refresh token', this.createErrorResponse(response));
+      }
+
+      if (typeof response.body !== 'object' || !response.body) {
+        throw new XmApiError(
+          'Invalid token response format',
+          this.createErrorResponse(response),
+        );
+      }
+
+      const body = response.body as {
+        access_token?: string;
+        refresh_token?: string;
+        expires_in?: number;
+        scope?: string;
+      };
+
+      if (!body.access_token || !body.refresh_token) {
+        throw new XmApiError(
+          'Token response missing required fields',
+          this.createErrorResponse(response),
+        );
+      }
+
+      this.tokenState = {
+        ...this.tokenState, // Preserve clientId and other fields
+        accessToken: body.access_token,
+        refreshToken: body.refresh_token,
+        scopes: body.scope?.split(' ') ?? [],
+        expiresAt: new Date(Date.now() + ((body.expires_in ?? 3600) * 1000)).toISOString(),
+      };
+
+      if (this.onTokenRefresh) {
+        try {
+          await this.onTokenRefresh(
+            this.tokenState.accessToken,
+            this.tokenState.refreshToken,
+          );
+        } catch (error) {
+          this.logger.warn(
+            'Error in onTokenRefresh callback, but continuing with refreshed token',
+            error,
+          );
+        }
+      }
+    } catch (error) {
+      this.logger.error('Failed to refresh token:', error);
+      throw error;
+    }
+  }
+
+  private exponentialBackoff(attempt: number): number {
+    // Calculate delay with exponential backoff: 1s, 2s, 4s, 8s, capped at 10s
+    return Math.min(1000 * Math.pow(2, attempt), 10000);
   }
 
   async send<T>(
@@ -99,28 +256,87 @@ export class HttpHandler {
       method?: HttpRequest['method'];
     },
   ): Promise<HttpResponse<T>> {
-    const req = this.requestBuilder.build(request);
+    // Check if token refresh is needed before making the request
+    if (this.tokenState && this.isTokenExpired()) {
+      await this.refreshToken();
+    }
+
+    const fullRequest = this.requestBuilder.build(request);
+
+    // Add authorization header if we have a token
+    if (this.tokenState?.accessToken) {
+      fullRequest.headers = {
+        ...fullRequest.headers,
+        Authorization: `Bearer ${this.tokenState.accessToken}`,
+      };
+    }
 
     try {
-      this.logger.debug('Sending request', { request: req });
-      const response = await this.client.send(req);
-      this.logger.debug('Received response', { response });
-
-      if (
-        response.status === 401 && this.onTokenRefresh && req.retryAttempt === 0
-      ) {
-        await this.refreshToken();
-        return this.send({ ...request, retryAttempt: 1 });
-      }
+      const response = await this.client.send(fullRequest);
 
       if (response.status >= 400) {
+        const currentAttempt = fullRequest.retryAttempt ?? 0;
+
+        // Handle OAuth token expiry/refresh first
+        if (
+          response.status === 401 &&
+          this.tokenState?.refreshToken &&
+          currentAttempt === 0
+        ) {
+          await this.refreshToken();
+          // Retry the original request with new token
+          return this.send<T>({
+            ...request,
+            retryAttempt: 1,
+          });
+        }
+
+        // For rate limits (429) or server errors (5xx), retry with exponential backoff
+        if (
+          (response.status === 429 || response.status >= 500) &&
+          currentAttempt < this.maxRetries
+        ) {
+          // Calculate delay based on retry attempt
+          const delay = this.exponentialBackoff(currentAttempt);
+
+          // Respect Retry-After header for rate limits if present
+          let finalDelay = delay;
+          if (response.status === 429 && response.headers['retry-after']) {
+            const retryAfter = parseInt(response.headers['retry-after'], 10);
+            if (!isNaN(retryAfter)) {
+              finalDelay = retryAfter * 1000;
+            }
+          }
+
+          this.logger.debug(
+            `Request failed with status ${response.status}, retrying in ${finalDelay}ms (attempt ${
+              currentAttempt + 1
+            }/${this.maxRetries})`,
+          );
+
+          await new Promise((resolve) => setTimeout(resolve, finalDelay));
+          return this.send<T>({
+            ...request,
+            retryAttempt: currentAttempt + 1,
+          });
+        }
+
+        // Try to extract a descriptive message from the response
+        let message = `Request failed with status ${response.status}`;
+        if (response.body && typeof response.body === 'object' && 'message' in response.body) {
+          message = String(response.body.message);
+        } else if (typeof response.body === 'string' && response.body.trim()) {
+          message = response.body.trim();
+        }
+
+        // Add error code if available
+        if (response.body && typeof response.body === 'object' && 'code' in response.body) {
+          message = `${response.body.code}: ${message}`;
+        }
+
         throw new XmApiError(
-          `Request failed with status ${response.status}`,
-          {
-            status: response.status,
-            headers: response.headers,
-            body: typeof response.body === 'string' ? response.body : JSON.stringify(response.body),
-          },
+          message,
+          this.createErrorResponse(response),
         );
       }
 
@@ -129,42 +345,27 @@ export class HttpHandler {
       if (error instanceof XmApiError) {
         throw error;
       }
-
-      const attempt = req.retryAttempt || 0;
-      if (attempt < this.maxRetries) {
-        this.logger.warn('Request failed, retrying', { error, attempt });
-        return this.send({ ...request, retryAttempt: attempt + 1 });
-      }
-
-      if (error instanceof Error) {
-        throw new XmApiError(`Request failed: ${error.message}`);
-      }
-      throw new XmApiError(`Request failed: ${String(error)}`);
+      throw new XmApiError('Request failed', undefined, error);
     }
   }
 
-  async get<T>(options: GetOptions): Promise<T> {
-    const response = await this.send<T>(options);
-    return response.body;
+  get<T>(options: GetOptions): Promise<HttpResponse<T>> {
+    return this.send<T>(options);
   }
 
-  async post<T>(options: RequestWithBodyOptions): Promise<T> {
-    const response = await this.send<T>({ ...options, method: 'POST' });
-    return response.body;
+  post<T>(options: RequestWithBodyOptions): Promise<HttpResponse<T>> {
+    return this.send<T>({ ...options, method: 'POST' });
   }
 
-  async put<T>(options: RequestWithBodyOptions): Promise<T> {
-    const response = await this.send<T>({ ...options, method: 'PUT' });
-    return response.body;
+  put<T>(options: RequestWithBodyOptions): Promise<HttpResponse<T>> {
+    return this.send<T>({ ...options, method: 'PUT' });
   }
 
-  async patch<T>(options: RequestWithBodyOptions): Promise<T> {
-    const response = await this.send<T>({ ...options, method: 'PATCH' });
-    return response.body;
+  patch<T>(options: RequestWithBodyOptions): Promise<HttpResponse<T>> {
+    return this.send<T>({ ...options, method: 'PATCH' });
   }
 
-  async delete<T>(options: DeleteOptions): Promise<T> {
-    const response = await this.send<T>({ ...options, method: 'DELETE' });
-    return response.body;
+  delete<T>(options: DeleteOptions): Promise<HttpResponse<T>> {
+    return this.send<T>({ ...options, method: 'DELETE' });
   }
 }

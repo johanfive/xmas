@@ -14,10 +14,13 @@ xm.groups
     offset: 0,
   })
   .then((response) => {
-    console.log(`Total Groups: ${response.total}`);
-    console.log(`Groups Count: ${response.count}`);
+    const { body, status, headers } = response;
+    console.log('Response Status:', status);
+    console.log('Response Headers:', headers);
+    console.log(`Total Groups: ${body.total}`);
+    console.log(`Groups Count: ${body.count}`);
     console.log('-------------------------');
-    response.data.forEach((group) => {
+    body.data.forEach((group) => {
       console.log(`Group ID: ${group.id}`);
       console.log(`Group Name: ${group.targetName}`);
       console.log(`Group Description: ${group.description}`);
