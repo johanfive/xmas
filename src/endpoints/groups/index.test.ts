@@ -6,7 +6,7 @@ import {
 } from 'https://deno.land/std@0.193.0/testing/asserts.ts';
 import { GroupsEndpoint } from './index.ts';
 import { GetGroupsResponse } from './types.ts';
-import { createMockResponse, MockHttpHandler } from '../../core/test-utils.ts';
+import { createMockResponse, MockRequestHandler } from '../../core/test-utils.ts';
 import { XmApiError } from '../../core/types.ts';
 
 const mockGroup = {
@@ -44,7 +44,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         'content-type': 'application/json',
       },
     });
-    const mockHttp = new MockHttpHandler(mockResponse);
+    const mockHttp = new MockRequestHandler(mockResponse);
     const endpoint = new GroupsEndpoint(mockHttp);
 
     const response = await endpoint.getGroups();
@@ -65,7 +65,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         'content-type': 'application/json',
       },
     });
-    const mockHttp = new MockHttpHandler(mockResponse);
+    const mockHttp = new MockRequestHandler(mockResponse);
     const endpoint = new GroupsEndpoint(mockHttp);
 
     const params = { limit: 10, offset: 0, search: 'test' };
@@ -89,7 +89,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         'content-type': 'application/json',
       },
     });
-    const mockHttp = new MockHttpHandler(errorResponse);
+    const mockHttp = new MockRequestHandler(errorResponse);
     const endpoint = new GroupsEndpoint(mockHttp);
 
     try {
@@ -126,7 +126,7 @@ Deno.test('GroupsEndpoint error handling', async (t) => {
       },
     });
 
-    const mockHttp = new MockHttpHandler([rateLimitResponse, successResponse]);
+    const mockHttp = new MockRequestHandler([rateLimitResponse, successResponse]);
     const endpoint = new GroupsEndpoint(mockHttp);
 
     const response = await endpoint.getGroups();
@@ -154,7 +154,7 @@ Deno.test('GroupsEndpoint error handling', async (t) => {
         'request-id': 'test-123',
       },
     });
-    const mockHttp = new MockHttpHandler(errorResponse);
+    const mockHttp = new MockRequestHandler(errorResponse);
     const endpoint = new GroupsEndpoint(mockHttp);
 
     try {
@@ -183,7 +183,7 @@ Deno.test('GroupsEndpoint error handling', async (t) => {
         'content-type': 'text/plain',
       },
     });
-    const mockHttp = new MockHttpHandler(errorResponse);
+    const mockHttp = new MockRequestHandler(errorResponse);
     const endpoint = new GroupsEndpoint(mockHttp);
 
     try {
@@ -203,7 +203,7 @@ Deno.test('GroupsEndpoint error handling', async (t) => {
   });
 
   await t.step('handles network errors', async () => {
-    const mockHttp = new MockHttpHandler({
+    const mockHttp = new MockRequestHandler({
       status: 0, // No status indicates network error
       headers: {},
       body: undefined,

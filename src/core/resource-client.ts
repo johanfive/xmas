@@ -1,13 +1,14 @@
 import type { DeleteOptions, GetOptions, HttpRequest, RequestWithBodyOptions } from './types.ts';
-import { HttpHandler } from './http.ts';
+import { RequestHandler } from './request-handler.ts';
 
 /**
- * A wrapper around HttpHandler that automatically prepends a base path to all requests.
+ * A wrapper around RequestHandler that automatically prepends a base path to all requests.
+ * Each API resource (endpoint) gets its own instance of this client to handle resource-specific paths.
  * This allows endpoint classes to focus on their specific paths without repeating the base path.
  */
-export class EndpointHttpHandler {
+export class ResourceClient {
   constructor(
-    private readonly http: HttpHandler,
+    private readonly http: RequestHandler,
     private readonly basePath: string,
   ) {
     if (!basePath.startsWith('/')) {

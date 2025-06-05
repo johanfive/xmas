@@ -1,5 +1,5 @@
-import { EndpointHttpHandler } from '../../core/endpoint-http.ts';
-import { HttpHandler } from '../../core/http.ts';
+import { ResourceClient } from '../../core/resource-client.ts';
+import { RequestHandler } from '../../core/request-handler.ts';
 import type { HttpResponse } from '../../core/types.ts';
 import { GetGroupsParams, GetGroupsResponse, Group } from './types.ts';
 
@@ -30,10 +30,10 @@ import { GetGroupsParams, GetGroupsResponse, Group } from './types.ts';
  * ```
  */
 export class GroupsEndpoint {
-  private readonly http: EndpointHttpHandler;
+  private readonly http: ResourceClient;
 
-  constructor(http: HttpHandler) {
-    this.http = new EndpointHttpHandler(http, '/groups');
+  constructor(http: RequestHandler) {
+    this.http = new ResourceClient(http, '/groups');
   }
 
   /**

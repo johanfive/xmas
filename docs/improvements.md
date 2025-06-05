@@ -2,7 +2,7 @@
 
 ## HTTP Handler Retry Strategy
 
-Currently, the HttpHandler implements a built-in retry strategy. Here are the potential improvements
+Currently, the RequestHandler implements a built-in retry strategy. Here are the potential improvements
 to consider with detailed implementation notes.
 
 ### Option 1: Keep Built-in Strategy but Make it More Configurable
@@ -28,7 +28,7 @@ export interface RetryConfig {
 }
 ```
 
-2. Update HttpHandler constructor to accept this config:
+2. Update RequestHandler constructor to accept this config:
 
 ```typescript
 constructor(
@@ -47,7 +47,7 @@ constructor(
 
 Implementation details:
 
-1. Add RetryingHttpClient class to `src/core/http-client.ts`:
+1. Add RetryingHttpClient class to `src/core/request-handler.ts`:
 
 ```typescript
 export class RetryingHttpClient implements HttpClient {
@@ -59,7 +59,7 @@ export class RetryingHttpClient implements HttpClient {
 }
 ```
 
-2. Move all retry-related code from HttpHandler to this class
+2. Move all retry-related code from RequestHandler to this class
 3. Update DefaultHttpClient to optionally wrap itself with RetryingHttpClient
 4. Add examples in README showing how to implement custom retry strategies
 
@@ -67,7 +67,7 @@ export class RetryingHttpClient implements HttpClient {
 
 Implementation details:
 
-1. Keep basic retry logic in HttpHandler but only for token refresh
+1. Keep basic retry logic in RequestHandler but only for token refresh
 2. Allow wrapping any HttpClient with retry behavior:
 
 ```typescript
@@ -76,7 +76,7 @@ const retryingClient = new RetryingHttpClient(client, {
   maxRetries: 3,
   shouldRetry: (res) => res.status === 429
 });
-const handler = new HttpHandler(retryingClient, ...);
+const handler = new RequestHandler(retryingClient, ...);
 ```
 
 3. Provide common retry strategies as utilities:

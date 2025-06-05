@@ -3,7 +3,7 @@ import {
   assertExists,
   assertRejects,
 } from 'https://deno.land/std@0.193.0/testing/asserts.ts';
-import { HttpHandler, RequestBuilder } from './http.ts';
+import { RequestBuilder, RequestHandler } from './request-handler.ts';
 import { HttpClient, HttpRequest, HttpResponse, Logger, XmApiError } from './types.ts';
 
 class TestHttpClient implements HttpClient {
@@ -27,11 +27,11 @@ const mockLogger: Logger = {
   error: () => {},
 };
 
-Deno.test('HttpHandler', async (t) => {
+Deno.test('RequestHandler', async (t) => {
   await t.step('handles non-JSON response bodies', async () => {
     const client = new TestHttpClient();
     const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new HttpHandler(client, mockLogger, requestBuilder);
+    const handler = new RequestHandler(client, mockLogger, requestBuilder);
 
     client.responses = [{
       status: 400,
@@ -49,7 +49,7 @@ Deno.test('HttpHandler', async (t) => {
   await t.step('retries on rate limit with Retry-After', async () => {
     const client = new TestHttpClient();
     const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new HttpHandler(client, mockLogger, requestBuilder);
+    const handler = new RequestHandler(client, mockLogger, requestBuilder);
 
     client.responses = [
       {
@@ -73,7 +73,7 @@ Deno.test('HttpHandler', async (t) => {
   await t.step('retries with exponential backoff on server error', async () => {
     const client = new TestHttpClient();
     const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new HttpHandler(client, mockLogger, requestBuilder);
+    const handler = new RequestHandler(client, mockLogger, requestBuilder);
 
     client.responses = [
       {
@@ -97,7 +97,7 @@ Deno.test('HttpHandler', async (t) => {
   await t.step('stops retrying after max attempts', async () => {
     const client = new TestHttpClient();
     const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new HttpHandler(client, mockLogger, requestBuilder);
+    const handler = new RequestHandler(client, mockLogger, requestBuilder);
 
     client.responses = Array(5).fill({
       status: 503,
@@ -117,7 +117,7 @@ Deno.test('HttpHandler', async (t) => {
   await t.step('handles network errors', async () => {
     const client = new TestHttpClient();
     const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new HttpHandler(client, mockLogger, requestBuilder);
+    const handler = new RequestHandler(client, mockLogger, requestBuilder);
 
     client.forceError = new Error('Network error');
 
@@ -138,7 +138,7 @@ Deno.test('HttpHandler', async (t) => {
   await t.step('refreshes token on 401 response', async () => {
     const client = new TestHttpClient();
     const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new HttpHandler(
+    const handler = new RequestHandler(
       client,
       mockLogger,
       requestBuilder,

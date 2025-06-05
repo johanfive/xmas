@@ -99,7 +99,7 @@ export class RequestBuilder {
   }
 }
 
-export class HttpHandler {
+export class RequestHandler {
   /** Current token state if using OAuth */
   private tokenState?: TokenState;
 

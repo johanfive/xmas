@@ -6,7 +6,7 @@ import {
   XmApiError,
   XmApiOptions,
 } from './types.ts';
-import { HttpHandler, RequestBuilder } from './http.ts';
+import { RequestBuilder, RequestHandler } from './request-handler.ts';
 
 class MockRequestBuilder extends RequestBuilder {
   constructor() {
@@ -26,7 +26,7 @@ class MockRequestBuilder extends RequestBuilder {
   }
 }
 
-export class MockHttpHandler extends HttpHandler {
+export class MockRequestHandler extends RequestHandler {
   public readonly requests: HttpRequest[] = [];
   private readonly responses: HttpResponse[];
   public forceError?: Error;

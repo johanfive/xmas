@@ -1,4 +1,9 @@
-import { DefaultHttpClient, defaultLogger, HttpHandler, RequestBuilder } from './core/http.ts';
+import {
+  DefaultHttpClient,
+  defaultLogger,
+  RequestBuilder,
+  RequestHandler,
+} from './core/request-handler.ts';
 import { XmApiOptions } from './core/types.ts';
 import { GroupsEndpoint } from './endpoints/groups/index.ts';
 
@@ -39,7 +44,7 @@ import { GroupsEndpoint } from './endpoints/groups/index.ts';
  */
 export class XmApi {
   /** HTTP handler that manages all API requests */
-  private readonly http: HttpHandler;
+  private readonly http: RequestHandler;
 
   /** Access groups-related endpoints */
   public readonly groups: GroupsEndpoint;
@@ -81,7 +86,7 @@ export class XmApi {
     // Get onTokenRefresh callback if using OAuth
     const onTokenRefresh = 'onTokenRefresh' in options ? options.onTokenRefresh : undefined;
 
-    this.http = new HttpHandler(httpClient, logger, requestBuilder, maxRetries, onTokenRefresh);
+    this.http = new RequestHandler(httpClient, logger, requestBuilder, maxRetries, onTokenRefresh);
 
     // Initialize endpoints
     this.groups = new GroupsEndpoint(this.http);
