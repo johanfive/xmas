@@ -1,6 +1,10 @@
 import { ResourceClient } from '../../core/resource-client.ts';
 import { RequestHandler } from '../../core/request-handler.ts';
-import type { HttpResponse } from '../../core/types.ts';
+import type { HttpResponse } from '../../core/types/internal/http.ts';
+import type {
+  EmptyHttpResponse,
+  PaginatedHttpResponse,
+} from '../../core/types/endpoint/response.ts';
 import { GetGroupsParams, GetGroupsResponse, Group } from './types.ts';
 
 /**
@@ -44,7 +48,7 @@ export class GroupsEndpoint {
    * @returns The HTTP response containing a paginated list of groups
    * @throws {XmApiError} If the request fails
    */
-  getGroups(params?: GetGroupsParams): Promise<HttpResponse<GetGroupsResponse>> {
+  getGroups(params?: GetGroupsParams): Promise<PaginatedHttpResponse<Group>> {
     return this.http.get<GetGroupsResponse>({ query: params });
   }
 
@@ -77,7 +81,7 @@ export class GroupsEndpoint {
    * @returns The HTTP response
    * @throws {XmApiError} If the request fails
    */
-  delete(id: string): Promise<HttpResponse<void>> {
+  delete(id: string): Promise<EmptyHttpResponse> {
     return this.http.delete<void>({ path: id });
   }
 }

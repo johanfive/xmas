@@ -3,7 +3,8 @@
     "std/": "https://deno.land/std@0.193.0/"
   },
   "tasks": {
-    "test": "deno test"
+    "test": "DENO_TLS_CA_STORE=system deno test",
+    "cache": "DENO_TLS_CA_STORE=system deno cache --reload src/**/*.ts"
   },
   "fmt": {
     "singleQuote": true,

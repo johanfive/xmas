@@ -1,7 +1,7 @@
 import { RequestBuilder } from './core/request-builder.ts';
 import { RequestHandler } from './core/request-handler.ts';
 import { DefaultHttpClient, defaultLogger } from './core/defaults/index.ts';
-import { XmApiOptions } from './core/types.ts';
+import { XmApiOptions } from './core/types/internal/config.ts';
 import { GroupsEndpoint } from './endpoints/groups/index.ts';
 
 /**
@@ -91,5 +91,9 @@ export class XmApi {
 }
 
 // Re-export types
-export * from './core/types.ts';
+export * from './core/types/internal/config.ts';
+export * from './core/types/internal/http.ts';
+export * from './core/types/endpoint/response.ts';
+export * from './core/types/endpoint/composers.ts';
+export * from './core/types/endpoint/params.ts';
 export * from './endpoints/groups/types.ts';

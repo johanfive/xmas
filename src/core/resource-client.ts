@@ -1,4 +1,9 @@
-import type { DeleteOptions, GetOptions, HttpRequest, RequestWithBodyOptions } from './types.ts';
+import type { HttpRequest } from './types/internal/http.ts';
+import type {
+  DeleteOptions,
+  GetOptions,
+  RequestWithBodyOptions,
+} from './types/internal/methods.ts';
 import { RequestHandler } from './request-handler.ts';
 
 /**

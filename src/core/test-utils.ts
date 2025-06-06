@@ -1,4 +1,5 @@
-import { HttpClient, HttpRequest, HttpResponse, Logger, XmApiOptions } from './types.ts';
+import { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
+import { Logger, XmApiOptions } from './types/internal/config.ts';
 import { XmApiError } from './errors.ts';
 import { RequestBuilder } from './request-builder.ts';
 import { RequestHandler } from './request-handler.ts';

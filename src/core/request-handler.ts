@@ -1,12 +1,14 @@
 import {
-  DeleteOptions,
-  GetOptions,
   HttpClient,
   HttpRequest,
   HttpResponse,
-  Logger,
+} from './types/internal/http.ts';
+import { Logger } from './types/internal/config.ts';
+import {
+  DeleteOptions,
+  GetOptions,
   RequestWithBodyOptions,
-} from './types.ts';
+} from './types/internal/methods.ts';
 import { XmApiError } from './errors.ts';
 import { TokenData, TokenState } from './oauth-types.ts';
 import { RequestBuilder } from './request-builder.ts';

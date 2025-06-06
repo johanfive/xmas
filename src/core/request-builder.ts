@@ -1,4 +1,4 @@
-import { HttpRequest } from './types.ts';
+import { HttpRequest } from './types/internal/http.ts';
 
 /**
  * Request options for building HTTP requests.

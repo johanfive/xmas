@@ -5,7 +5,8 @@ import {
 } from 'https://deno.land/std@0.193.0/testing/asserts.ts';
 import { RequestHandler } from './request-handler.ts';
 import { RequestBuilder } from './request-builder.ts';
-import { HttpClient, HttpRequest, HttpResponse, Logger } from './types.ts';
+import { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
+import { Logger } from './types/internal/config.ts';
 import { XmApiError } from './errors.ts';
 
 class TestHttpClient implements HttpClient {

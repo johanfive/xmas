@@ -1,4 +1,5 @@
-import { PaginatedResponse, WithPagination, WithSearch } from '../../core/types.ts';
+import { PaginatedResponse } from '../../core/types/endpoint/response.ts';
+import { WithPagination, WithSearch } from '../../core/types/endpoint/composers.ts';
 
 /**
  * Represents a group in xMatters.
