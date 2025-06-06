@@ -58,13 +58,16 @@ export class RequestBuilder {
       });
     }
 
+    // Build headers by merging default headers with request-specific headers
+    const headers: Record<string, string> = { ...this.defaultHeaders, ...options.headers };
+
     const builtRequest: HttpRequest = {
       method: options.method || 'GET',
       // For the path property, use the actual path provided or extract it from fullUrl
       path: options.path || options.fullUrl || '',
       url: url.toString(),
       query: options.query,
-      headers: { ...this.defaultHeaders, ...options.headers },
+      headers,
       body: options.body,
       retryAttempt: options.retryAttempt || 0,
     };

@@ -4,9 +4,7 @@ import {
   assertRejects,
 } from 'https://deno.land/std@0.193.0/testing/asserts.ts';
 import { RequestHandler } from './request-handler.ts';
-import { RequestBuilder } from './request-builder.ts';
 import { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
-import { Logger } from './types/internal/config.ts';
 import { XmApiError } from './errors.ts';
 
 class TestHttpClient implements HttpClient {
@@ -25,18 +23,32 @@ class TestHttpClient implements HttpClient {
   }
 }
 
-const mockLogger: Logger = {
+const mockLogger = {
   debug: () => {},
   info: () => {},
   warn: () => {},
   error: () => {},
 };
 
+const basicOptions = {
+  hostname: 'https://example.com',
+  username: 'testuser',
+  password: 'password123',
+  defaultHeaders: {},
+};
+
+const oauthOptions = {
+  hostname: 'https://example.com',
+  accessToken: 'access-token',
+  refreshToken: 'refresh-token',
+  clientId: 'client-id',
+  defaultHeaders: {},
+};
+
 Deno.test('RequestHandler', async (t) => {
   await t.step('handles non-JSON response bodies', async () => {
     const client = new TestHttpClient();
-    const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new RequestHandler(client, mockLogger, requestBuilder);
+    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
 
     client.responses = [{
       status: 400,
@@ -53,8 +65,7 @@ Deno.test('RequestHandler', async (t) => {
 
   await t.step('retries on rate limit with Retry-After', async () => {
     const client = new TestHttpClient();
-    const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new RequestHandler(client, mockLogger, requestBuilder);
+    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
 
     client.responses = [
       {
@@ -77,8 +88,7 @@ Deno.test('RequestHandler', async (t) => {
 
   await t.step('retries with exponential backoff on server error', async () => {
     const client = new TestHttpClient();
-    const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new RequestHandler(client, mockLogger, requestBuilder);
+    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
 
     client.responses = [
       {
@@ -101,8 +111,7 @@ Deno.test('RequestHandler', async (t) => {
 
   await t.step('stops retrying after max attempts', async () => {
     const client = new TestHttpClient();
-    const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new RequestHandler(client, mockLogger, requestBuilder);
+    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
 
     client.responses = Array(5).fill({
       status: 503,
@@ -121,8 +130,7 @@ Deno.test('RequestHandler', async (t) => {
 
   await t.step('handles network errors', async () => {
     const client = new TestHttpClient();
-    const requestBuilder = new RequestBuilder('https://example.com');
-    const handler = new RequestHandler(client, mockLogger, requestBuilder);
+    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
 
     client.forceError = new Error('Network error');
 
@@ -140,20 +148,74 @@ Deno.test('RequestHandler', async (t) => {
     }
   });
 
-  await t.step('refreshes token on 401 response', async () => {
+  await t.step('adds Basic Auth header to requests', async () => {
     const client = new TestHttpClient();
-    const requestBuilder = new RequestBuilder('https://example.com');
+    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
+
+    client.responses = [{
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+      body: { success: true },
+    }];
+
+    await handler.get({ path: '/test' });
+
+    assertEquals(client.requests.length, 1);
+    const request = client.requests[0];
+    assertExists(request.headers?.Authorization);
+
+    // Verify it's Basic auth
+    const [authType] = request.headers.Authorization.split(' ');
+    assertEquals(authType, 'Basic');
+  });
+
+  await t.step('adds OAuth Bearer token to requests', async () => {
+    const client = new TestHttpClient();
+    const initialTokenState = {
+      accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token',
+      clientId: 'client-id',
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      scopes: [],
+    };
     const handler = new RequestHandler(
       client,
       mockLogger,
-      requestBuilder,
+      oauthOptions,
       3,
       undefined,
-      {
-        accessToken: 'old-token',
-        refreshToken: 'refresh-token',
-        clientId: 'client-id',
-      },
+      initialTokenState,
+    );
+
+    client.responses = [{
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+      body: { success: true },
+    }];
+
+    await handler.get({ path: '/test' });
+
+    assertEquals(client.requests.length, 1);
+    const request = client.requests[0];
+    assertEquals(request.headers?.Authorization, 'Bearer test-access-token');
+  });
+
+  await t.step('refreshes token on 401 response', async () => {
+    const client = new TestHttpClient();
+    const initialTokenState = {
+      accessToken: 'old-token',
+      refreshToken: 'refresh-token',
+      clientId: 'client-id',
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      scopes: [],
+    };
+    const handler = new RequestHandler(
+      client,
+      mockLogger,
+      oauthOptions,
+      3,
+      undefined,
+      initialTokenState,
     );
 
     client.responses = [
@@ -198,5 +260,22 @@ Deno.test('RequestHandler', async (t) => {
     // Verify retried request uses new token
     const retriedRequest = client.requests[2];
     assertEquals(retriedRequest.headers?.Authorization, 'Bearer new-token');
+  });
+
+  await t.step('skips auth headers when skipAuth is true', async () => {
+    const client = new TestHttpClient();
+    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
+
+    client.responses = [{
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+      body: { success: true },
+    }];
+
+    await handler.send({ path: '/oauth2/token', skipAuth: true });
+
+    assertEquals(client.requests.length, 1);
+    const request = client.requests[0];
+    assertEquals(request.headers?.Authorization, undefined);
   });
 });

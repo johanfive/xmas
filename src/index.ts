@@ -1,9 +1,7 @@
-import { RequestBuilder } from './core/request-builder.ts';
 import { RequestHandler } from './core/request-handler.ts';
 import { DefaultHttpClient, defaultLogger } from './core/defaults/index.ts';
-import { isBasicAuthOptions, isOAuthOptions, XmApiOptions } from './core/types/internal/config.ts';
+import { isOAuthOptions, XmApiOptions } from './core/types/internal/config.ts';
 import { GroupsEndpoint } from './endpoints/groups/index.ts';
-import { TokenData } from './core/types/internal/oauth.ts';
 
 /**
  * Main entry point for the xMatters API client.
@@ -47,70 +45,33 @@ export class XmApi {
   /** Access groups-related endpoints */
   public readonly groups: GroupsEndpoint;
 
-  /**
-   * Creates the authorization header value based on the authentication type
-   */
-  private createAuthorizationHeader(options: XmApiOptions): string {
-    if (isOAuthOptions(options)) {
-      return `Bearer ${options.accessToken}`;
-    } else if (isBasicAuthOptions(options)) {
-      // In Deno, we use TextEncoder for proper UTF-8 encoding
-      const encoder = new TextEncoder();
-      const authString = `${options.username}:${options.password}`;
-      const auth = btoa(String.fromCharCode(...encoder.encode(authString)));
-      return `Basic ${auth}`;
-    } else {
-      // No authentication for token generation endpoints
-      return '';
-    }
-  }
-
-  constructor(options: XmApiOptions) {
+  constructor(private readonly options: XmApiOptions) {
     const {
-      hostname,
       httpClient = new DefaultHttpClient(),
       logger = defaultLogger,
-      defaultHeaders = {},
       maxRetries = 3,
     } = options;
 
-    // Set up default headers
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...defaultHeaders,
-    };
-
-    // Add authorization header if we can determine it now
-    const authHeader = this.createAuthorizationHeader(options);
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
-
-    const requestBuilder = new RequestBuilder(hostname, headers);
-
-    // Get onTokenRefresh callback and token data if using OAuth
-    let onTokenRefresh:
-      | ((accessToken: string, refreshToken: string) => void | Promise<void>)
-      | undefined;
-    let tokenData: TokenData | undefined;
-
+    // Create initial token state for OAuth if needed
+    let initialTokenState;
     if (isOAuthOptions(options)) {
-      onTokenRefresh = options.onTokenRefresh;
-      tokenData = {
+      initialTokenState = {
         accessToken: options.accessToken,
         refreshToken: options.refreshToken || '',
         clientId: options.clientId,
+        // Set a default expiry 5 minutes from now - we'll get the real value on first refresh
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        scopes: [],
       };
     }
 
     this.http = new RequestHandler(
       httpClient,
       logger,
-      requestBuilder,
+      options,
       maxRetries,
-      onTokenRefresh,
-      tokenData,
+      isOAuthOptions(options) ? options.onTokenRefresh : undefined,
+      initialTokenState,
     );
 
     // Initialize endpoints

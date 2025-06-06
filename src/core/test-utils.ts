@@ -1,27 +1,7 @@
 import { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
 import { Logger, XmApiOptions } from './types/internal/config.ts';
 import { XmApiError } from './errors.ts';
-import { RequestBuilder } from './request-builder.ts';
 import { RequestHandler } from './request-handler.ts';
-
-class MockRequestBuilder extends RequestBuilder {
-  constructor() {
-    super('https://example.com');
-  }
-
-  override build(options: { path?: string; fullUrl?: string } & Partial<HttpRequest>): HttpRequest {
-    const url = options.fullUrl || `https://example.com${options.path || '/'}`;
-    return {
-      method: options.method || 'GET',
-      path: options.path || options.fullUrl || '/',
-      url,
-      query: options.query,
-      headers: options.headers || {},
-      body: options.body,
-      retryAttempt: options.retryAttempt || 0,
-    };
-  }
-}
 
 export class MockRequestHandler extends RequestHandler {
   public readonly requests: HttpRequest[] = [];
@@ -39,9 +19,13 @@ export class MockRequestHandler extends RequestHandler {
       warn: () => {},
       error: () => {},
     };
-    const mockRequestBuilder = new MockRequestBuilder();
+    const mockOptions: XmApiOptions = {
+      hostname: 'https://example.com',
+      username: 'test-user',
+      password: 'test-password',
+    };
 
-    super(mockClient, mockLogger, mockRequestBuilder);
+    super(mockClient, mockLogger, mockOptions);
     this.responses = Array.isArray(responses) ? responses : [responses];
   }
 

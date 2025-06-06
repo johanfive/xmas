@@ -70,4 +70,17 @@ Deno.test('RequestBuilder', async (t) => {
       'Either path or fullUrl must be provided',
     );
   });
+
+  await t.step('merges headers correctly', () => {
+    const request = builder.build({
+      path: '/people',
+      headers: {
+        'custom-header': 'custom-value',
+        'default-header': 'overridden-value', // Should override default
+      },
+    });
+
+    assertEquals(request.headers?.['default-header'], 'overridden-value');
+    assertEquals(request.headers?.['custom-header'], 'custom-value');
+  });
 });

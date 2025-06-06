@@ -1,13 +1,20 @@
 import { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
-import { Logger } from './types/internal/config.ts';
+import {
+  isBasicAuthOptions,
+  isOAuthOptions,
+  Logger,
+  XmApiOptions,
+} from './types/internal/config.ts';
 import { DeleteOptions, GetOptions, RequestWithBodyOptions } from './types/internal/methods.ts';
 import { XmApiError } from './errors.ts';
-import { TokenData, TokenState } from './types/internal/oauth.ts';
+import { TokenState } from './types/internal/oauth.ts';
 import { RequestBuilder } from './request-builder.ts';
 
 export class RequestHandler {
   /** Current token state if using OAuth */
   private tokenState?: TokenState;
+  /** Request builder for creating HTTP requests */
+  private readonly requestBuilder: RequestBuilder;
 
   /**
    * Helper method to safely convert a response body to a string for error messages
@@ -44,24 +51,27 @@ export class RequestHandler {
   constructor(
     private readonly client: HttpClient,
     private readonly logger: Logger,
-    private readonly requestBuilder: RequestBuilder,
+    private readonly options: XmApiOptions,
     private readonly maxRetries: number = 3,
     private readonly onTokenRefresh?: (
       accessToken: string,
       refreshToken: string,
     ) => void | Promise<void>,
-    tokenData?: TokenData,
+    tokenState?: TokenState,
   ) {
-    // If we have token data, initialize token state
-    if (tokenData) {
-      this.tokenState = {
-        ...tokenData,
-        // Set a default expiry 5 minutes from now - we'll get the real value on first refresh
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-        scopes: [],
-        clientId: tokenData.clientId,
-      };
+    // If we have token state, store it
+    if (tokenState) {
+      this.tokenState = tokenState;
     }
+
+    // Create request builder
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...options.defaultHeaders,
+    };
+
+    this.requestBuilder = new RequestBuilder(options.hostname, headers);
   }
 
   private isTokenExpired(): boolean {
@@ -156,11 +166,30 @@ export class RequestHandler {
     return Math.min(1000 * Math.pow(2, attempt), 10000);
   }
 
+  /**
+   * Creates the authorization header value based on the authentication type
+   */
+  private createAuthHeader(): string | undefined {
+    if (isOAuthOptions(this.options)) {
+      // For OAuth, get the current access token from token state
+      const currentToken = this.tokenState?.accessToken;
+      return currentToken ? `Bearer ${currentToken}` : undefined;
+    } else if (isBasicAuthOptions(this.options)) {
+      // In Deno, we use TextEncoder for proper UTF-8 encoding
+      const encoder = new TextEncoder();
+      const authString = `${this.options.username}:${this.options.password}`;
+      const auth = btoa(String.fromCharCode(...encoder.encode(authString)));
+      return `Basic ${auth}`;
+    }
+    return undefined;
+  }
+
   async send<T>(
     request: Partial<HttpRequest> & {
       path?: string;
       fullUrl?: string;
       method?: HttpRequest['method'];
+      skipAuth?: boolean;
     },
   ): Promise<HttpResponse<T>> {
     // Check if token refresh is needed before making the request
@@ -170,12 +199,15 @@ export class RequestHandler {
 
     const fullRequest = this.requestBuilder.build(request);
 
-    // Add authorization header if we have a token
-    if (this.tokenState?.accessToken) {
-      fullRequest.headers = {
-        ...fullRequest.headers,
-        Authorization: `Bearer ${this.tokenState.accessToken}`,
-      };
+    // Add authorization header unless explicitly skipped
+    if (!request.skipAuth) {
+      const authHeader = this.createAuthHeader();
+      if (authHeader) {
+        fullRequest.headers = {
+          ...fullRequest.headers,
+          Authorization: authHeader,
+        };
+      }
     }
 
     try {
