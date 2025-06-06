@@ -1,8 +1,9 @@
 import { RequestBuilder } from './core/request-builder.ts';
 import { RequestHandler } from './core/request-handler.ts';
 import { DefaultHttpClient, defaultLogger } from './core/defaults/index.ts';
-import { XmApiOptions } from './core/types/internal/config.ts';
+import { isBasicAuthOptions, isOAuthOptions, XmApiOptions } from './core/types/internal/config.ts';
 import { GroupsEndpoint } from './endpoints/groups/index.ts';
+import { TokenData } from './core/types/internal/oauth.ts';
 
 /**
  * Main entry point for the xMatters API client.
@@ -22,7 +23,7 @@ import { GroupsEndpoint } from './endpoints/groups/index.ts';
  * });
  * ```
  *
- * @example OAuth Authentication
+ * @example OAuth Authentication (with existing tokens)
  * ```typescript
  * const xm = new XmApi({
  *   hostname: 'https://example.xmatters.com',
@@ -50,14 +51,17 @@ export class XmApi {
    * Creates the authorization header value based on the authentication type
    */
   private createAuthorizationHeader(options: XmApiOptions): string {
-    if ('accessToken' in options) {
+    if (isOAuthOptions(options)) {
       return `Bearer ${options.accessToken}`;
-    } else {
+    } else if (isBasicAuthOptions(options)) {
       // In Deno, we use TextEncoder for proper UTF-8 encoding
       const encoder = new TextEncoder();
       const authString = `${options.username}:${options.password}`;
       const auth = btoa(String.fromCharCode(...encoder.encode(authString)));
       return `Basic ${auth}`;
+    } else {
+      // No authentication for token generation endpoints
+      return '';
     }
   }
 
@@ -70,20 +74,44 @@ export class XmApi {
       maxRetries = 3,
     } = options;
 
-    // Set up default headers with auth
+    // Set up default headers
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       ...defaultHeaders,
-      'Authorization': this.createAuthorizationHeader(options),
     };
+
+    // Add authorization header if we can determine it now
+    const authHeader = this.createAuthorizationHeader(options);
+    if (authHeader) {
+      headers['Authorization'] = authHeader;
+    }
 
     const requestBuilder = new RequestBuilder(hostname, headers);
 
-    // Get onTokenRefresh callback if using OAuth
-    const onTokenRefresh = 'onTokenRefresh' in options ? options.onTokenRefresh : undefined;
+    // Get onTokenRefresh callback and token data if using OAuth
+    let onTokenRefresh:
+      | ((accessToken: string, refreshToken: string) => void | Promise<void>)
+      | undefined;
+    let tokenData: TokenData | undefined;
 
-    this.http = new RequestHandler(httpClient, logger, requestBuilder, maxRetries, onTokenRefresh);
+    if (isOAuthOptions(options)) {
+      onTokenRefresh = options.onTokenRefresh;
+      tokenData = {
+        accessToken: options.accessToken,
+        refreshToken: options.refreshToken || '',
+        clientId: options.clientId,
+      };
+    }
+
+    this.http = new RequestHandler(
+      httpClient,
+      logger,
+      requestBuilder,
+      maxRetries,
+      onTokenRefresh,
+      tokenData,
+    );
 
     // Initialize endpoints
     this.groups = new GroupsEndpoint(this.http);
@@ -93,6 +121,7 @@ export class XmApi {
 // Re-export types
 export * from './core/types/internal/config.ts';
 export * from './core/types/internal/http.ts';
+export * from './core/types/internal/oauth.ts';
 export * from './core/types/endpoint/response.ts';
 export * from './core/types/endpoint/composers.ts';
 export * from './core/types/endpoint/params.ts';

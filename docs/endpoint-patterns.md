@@ -1,6 +1,7 @@
 # Endpoint Implementation Patterns
 
-This guide shows the recommended patterns for implementing new endpoints in the xMatters API library.
+This guide shows the recommended patterns for implementing new endpoints in the xMatters API
+library.
 
 ## Directory Structure
 
@@ -60,7 +61,7 @@ export type GetMyResourcesResponse = PaginatedResponse<MyResource>;
 
 Follow this pattern for implementing the endpoint class:
 
-```typescript
+````typescript
 import { ResourceClient } from '../../core/resource-client.ts';
 import { RequestHandler } from '../../core/request-handler.ts';
 import type { HttpResponse } from '../../core/types/internal/http.ts';
@@ -74,23 +75,23 @@ import { GetMyResourcesParams, GetMyResourcesResponse, MyResource } from './type
 /**
  * Provides access to the my-resources endpoints of the xMatters API.
  * Use this class to manage resources, including listing, creating, updating, and deleting.
- * 
+ *
  * @example
  * ```typescript
  * const xm = new XmApi({
  *   hostname: 'https://example.xmatters.com',
  *   accessToken: 'your-token'
  * });
- * 
+ *
  * // Get all resources
  * const { body: resources } = await xm.myResources.getMyResources();
- * 
+ *
  * // Get resources with pagination
  * const { body: pagedResources } = await xm.myResources.getMyResources({
  *   limit: 10,
  *   offset: 0
  * });
- * 
+ *
  * // Search for resources
  * const { body: searchedResources } = await xm.myResources.getMyResources({
  *   search: 'keyword'
@@ -150,7 +151,7 @@ export class MyResourcesEndpoint {
     return this.http.delete<void>({ path: id });
   }
 }
-```
+````
 
 ## Adding to Main API Class
 
@@ -166,7 +167,7 @@ export class XmApi {
 
   /** Access groups-related endpoints */
   public readonly groups: GroupsEndpoint;
-  
+
   /** Access my-resources-related endpoints */
   public readonly myResources: MyResourcesEndpoint;
 
@@ -185,7 +186,8 @@ export * from './endpoints/my-resources/types.ts';
 
 ## Key Benefits of This Pattern
 
-1. **Consistent Return Types**: All methods return `Promise<HttpResponse<T>>` for predictable handling
+1. **Consistent Return Types**: All methods return `Promise<HttpResponse<T>>` for predictable
+   handling
 2. **Type Safety**: Full TypeScript support with proper generics
 3. **Reusable Components**: Use type composers for common patterns (pagination, search, etc.)
 4. **Easy Testing**: MockRequestHandler provides consistent testing patterns
@@ -213,7 +215,7 @@ console.log('Headers:', response.headers);
 
 // Access response body
 console.log('Total groups:', response.body.total);
-response.body.data.forEach(group => {
+response.body.data.forEach((group) => {
   console.log('Group:', group.targetName);
 });
 ```
@@ -242,9 +244,9 @@ The library uses `MockRequestHandler` for consistent testing:
 ```typescript
 // Create mock response
 const mockResponse = createMockResponse({
-  body: { /* your response data */ },
+  body: {/* your response data */},
   status: 200,
-  headers: { 'content-type': 'application/json' }
+  headers: { 'content-type': 'application/json' },
 });
 
 // Create mock HTTP handler
@@ -263,4 +265,5 @@ assertEquals(request.method, 'GET');
 assertEquals(request.path, '/my-resources');
 ```
 
-This pattern ensures consistency across all endpoints while maintaining flexibility for consumers to access both response data and HTTP metadata when needed.
+This pattern ensures consistency across all endpoints while maintaining flexibility for consumers to
+access both response data and HTTP metadata when needed.

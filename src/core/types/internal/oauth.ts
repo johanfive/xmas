@@ -1,4 +1,9 @@
 /**
+ * OAuth2-related types used internally by the library.
+ * These types handle OAuth2 token responses, state management, and authentication flows.
+ */
+
+/**
  * Response from the OAuth2 token endpoint.
  */
 export interface OAuth2TokenResponse {

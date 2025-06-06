@@ -1,16 +1,8 @@
-import {
-  HttpClient,
-  HttpRequest,
-  HttpResponse,
-} from './types/internal/http.ts';
+import { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
 import { Logger } from './types/internal/config.ts';
-import {
-  DeleteOptions,
-  GetOptions,
-  RequestWithBodyOptions,
-} from './types/internal/methods.ts';
+import { DeleteOptions, GetOptions, RequestWithBodyOptions } from './types/internal/methods.ts';
 import { XmApiError } from './errors.ts';
-import { TokenData, TokenState } from './oauth-types.ts';
+import { TokenData, TokenState } from './types/internal/oauth.ts';
 import { RequestBuilder } from './request-builder.ts';
 
 export class RequestHandler {

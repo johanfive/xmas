@@ -204,3 +204,9 @@ Features:
 
 Do not make any changes until you have 95% confidence that you know what to build. Ask me follow up
 questions until you have that confidence.
+
+To run unit tests, always prompt the user to run the following command:
+
+```bash
+deno test
+```
