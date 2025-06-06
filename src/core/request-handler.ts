@@ -6,8 +6,8 @@ import {
   HttpResponse,
   Logger,
   RequestWithBodyOptions,
-  XmApiError,
 } from './types.ts';
+import { XmApiError } from './errors.ts';
 import { TokenData, TokenState } from './oauth-types.ts';
 
 export class DefaultHttpClient implements HttpClient {

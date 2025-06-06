@@ -1,11 +1,5 @@
-import {
-  HttpClient,
-  HttpRequest,
-  HttpResponse,
-  Logger,
-  XmApiError,
-  XmApiOptions,
-} from './types.ts';
+import { HttpClient, HttpRequest, HttpResponse, Logger, XmApiOptions } from './types.ts';
+import { XmApiError } from './errors.ts';
 import { RequestBuilder, RequestHandler } from './request-handler.ts';
 
 class MockRequestBuilder extends RequestBuilder {

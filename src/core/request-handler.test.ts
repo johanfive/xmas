@@ -4,7 +4,8 @@ import {
   assertRejects,
 } from 'https://deno.land/std@0.193.0/testing/asserts.ts';
 import { RequestBuilder, RequestHandler } from './request-handler.ts';
-import { HttpClient, HttpRequest, HttpResponse, Logger, XmApiError } from './types.ts';
+import { HttpClient, HttpRequest, HttpResponse, Logger } from './types.ts';
+import { XmApiError } from './errors.ts';
 
 class TestHttpClient implements HttpClient {
   public requests: HttpRequest[] = [];

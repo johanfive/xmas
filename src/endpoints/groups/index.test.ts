@@ -7,7 +7,7 @@ import {
 import { GroupsEndpoint } from './index.ts';
 import { GetGroupsResponse } from './types.ts';
 import { createMockResponse, MockRequestHandler } from '../../core/test-utils.ts';
-import { XmApiError } from '../../core/types.ts';
+import { XmApiError } from '../../core/errors.ts';
 
 const mockGroup = {
   id: '123',

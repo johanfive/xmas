@@ -2,8 +2,8 @@
 
 ## HTTP Handler Retry Strategy
 
-Currently, the RequestHandler implements a built-in retry strategy. Here are the potential improvements
-to consider with detailed implementation notes.
+Currently, the RequestHandler implements a built-in retry strategy. Here are the potential
+improvements to consider with detailed implementation notes.
 
 ### Option 1: Keep Built-in Strategy but Make it More Configurable
 
