@@ -1,4 +1,5 @@
-import { RequestBuilder, RequestHandler } from './core/request-handler.ts';
+import { RequestBuilder } from './core/request-builder.ts';
+import { RequestHandler } from './core/request-handler.ts';
 import { DefaultHttpClient, defaultLogger } from './core/defaults/index.ts';
 import { XmApiOptions } from './core/types.ts';
 import { GroupsEndpoint } from './endpoints/groups/index.ts';

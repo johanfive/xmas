@@ -1,21 +1,23 @@
 import { HttpClient, HttpRequest, HttpResponse, Logger, XmApiOptions } from './types.ts';
 import { XmApiError } from './errors.ts';
-import { RequestBuilder, RequestHandler } from './request-handler.ts';
+import { RequestBuilder } from './request-builder.ts';
+import { RequestHandler } from './request-handler.ts';
 
 class MockRequestBuilder extends RequestBuilder {
   constructor() {
     super('https://example.com');
   }
 
-  override build(request: Partial<HttpRequest> & { path: string }): HttpRequest {
+  override build(options: { path?: string; fullUrl?: string } & Partial<HttpRequest>): HttpRequest {
+    const url = options.fullUrl || `https://example.com${options.path || '/'}`;
     return {
-      method: request.method || 'GET',
-      path: request.path,
-      url: `https://example.com${request.path}`,
-      query: request.query,
-      headers: request.headers || {},
-      body: request.body,
-      retryAttempt: request.retryAttempt || 0,
+      method: options.method || 'GET',
+      path: options.path || options.fullUrl || '/',
+      url,
+      query: options.query,
+      headers: options.headers || {},
+      body: options.body,
+      retryAttempt: options.retryAttempt || 0,
     };
   }
 }
@@ -28,7 +30,7 @@ export class MockRequestHandler extends RequestHandler {
   constructor(responses: HttpResponse | HttpResponse[]) {
     // Create minimal implementations for required dependencies
     const mockClient: HttpClient = {
-      send: async () => ({ status: 200, headers: {}, body: {} }),
+      send: () => Promise.resolve({ status: 200, headers: {}, body: {} }),
     };
     const mockLogger: Logger = {
       debug: () => {},

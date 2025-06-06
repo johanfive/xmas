@@ -3,7 +3,8 @@ import {
   assertExists,
   assertRejects,
 } from 'https://deno.land/std@0.193.0/testing/asserts.ts';
-import { RequestBuilder, RequestHandler } from './request-handler.ts';
+import { RequestHandler } from './request-handler.ts';
+import { RequestBuilder } from './request-builder.ts';
 import { HttpClient, HttpRequest, HttpResponse, Logger } from './types.ts';
 import { XmApiError } from './errors.ts';
 
@@ -12,12 +13,14 @@ class TestHttpClient implements HttpClient {
   public responses: HttpResponse[] = [];
   public forceError?: Error;
 
-  async send(request: HttpRequest): Promise<HttpResponse> {
+  send(request: HttpRequest): Promise<HttpResponse> {
     this.requests.push(request);
     if (this.forceError) {
-      throw this.forceError;
+      return Promise.reject(this.forceError);
     }
-    return this.responses[this.requests.length - 1] || this.responses[this.responses.length - 1];
+    return Promise.resolve(
+      this.responses[this.requests.length - 1] || this.responses[this.responses.length - 1],
+    );
   }
 }
 

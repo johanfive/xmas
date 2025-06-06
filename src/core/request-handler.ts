@@ -9,40 +9,7 @@ import {
 } from './types.ts';
 import { XmApiError } from './errors.ts';
 import { TokenData, TokenState } from './oauth-types.ts';
-
-export class RequestBuilder {
-  private readonly apiVersionPath = '/api/xm/1';
-
-  constructor(
-    private readonly baseUrl: string,
-    private readonly defaultHeaders: Record<string, string> = {},
-  ) {}
-
-  build(request: Partial<HttpRequest> & { path: string }): HttpRequest {
-    const fullPath = `${this.apiVersionPath}${request.path}`;
-    const url = new URL(fullPath, this.baseUrl);
-    // Add query parameters if present in the request
-    if (request.query) {
-      Object.entries(request.query).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          url.searchParams.set(key, String(value));
-        }
-      });
-    }
-
-    const builtRequest: HttpRequest = {
-      method: request.method || 'GET',
-      path: request.path,
-      url: url.toString(),
-      query: request.query,
-      headers: { ...this.defaultHeaders, ...request.headers },
-      body: request.body,
-      retryAttempt: request.retryAttempt || 0,
-    };
-
-    return builtRequest;
-  }
-}
+import { RequestBuilder } from './request-builder.ts';
 
 export class RequestHandler {
   /** Current token state if using OAuth */
@@ -197,7 +164,8 @@ export class RequestHandler {
 
   async send<T>(
     request: Partial<HttpRequest> & {
-      path: string;
+      path?: string;
+      fullUrl?: string;
       method?: HttpRequest['method'];
     },
   ): Promise<HttpResponse<T>> {
