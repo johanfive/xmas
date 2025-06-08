@@ -63,7 +63,6 @@ function createEndpointTestSetup(options: {
     ? { hostname, accessToken, refreshToken, clientId }
     : { hostname, username, password };
 
-  // Create mock HTTP client - this is the ONLY thing we mock
   const mockHttpClient: HttpClient = {
     send: () => Promise.resolve({ status: 200, headers: {}, body: {} }),
   };
@@ -142,13 +141,10 @@ Deno.test('GroupsEndpoint', async (t) => {
   await t.step('getGroups() - sends correct HTTP request with no params', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
-
     try {
-      const result = await endpoint.getGroups();
-
+      const response = await endpoint.getGroups();
       // Verify HTTP client was called exactly once
       expect(sendStub.calls.length).toBe(1);
-
       // Verify the request details
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
@@ -159,9 +155,8 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
       expect(sentRequest.body).toBeUndefined();
-
       // Verify response is returned correctly
-      expect(result).toEqual(mockPaginatedResponse);
+      expect(response).toEqual(mockPaginatedResponse);
     } finally {
       sendStub.restore();
     }
@@ -170,14 +165,20 @@ Deno.test('GroupsEndpoint', async (t) => {
   await t.step('getGroups() - sends correct HTTP request with pagination params', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
-
     try {
-      await endpoint.getGroups({ limit: 10, offset: 20 });
-
+      const response = await endpoint.getGroups({ limit: 10, offset: 20 });
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
       expect(sentRequest.path).toBe('/groups');
+      expect(sentRequest.url).toBe(
+        'https://example.xmatters.com/api/xm/1/groups?limit=10&offset=20',
+      );
       expect(sentRequest.query).toEqual({ limit: 10, offset: 20 });
+      expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
+      expect(sentRequest.headers?.['Accept']).toBe('application/json');
+      expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
+      expect(sentRequest.body).toBeUndefined();
+      expect(response).toEqual(mockPaginatedResponse);
     } finally {
       sendStub.restore();
     }
@@ -186,14 +187,20 @@ Deno.test('GroupsEndpoint', async (t) => {
   await t.step('getGroups() - sends correct HTTP request with search params', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
-
     try {
-      await endpoint.getGroups({ search: 'oncall', limit: 5 });
-
+      const response = await endpoint.getGroups({ search: 'oncall', limit: 5 });
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
       expect(sentRequest.path).toBe('/groups');
+      expect(sentRequest.url).toBe(
+        'https://example.xmatters.com/api/xm/1/groups?search=oncall&limit=5',
+      );
       expect(sentRequest.query).toEqual({ search: 'oncall', limit: 5 });
+      expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
+      expect(sentRequest.headers?.['Accept']).toBe('application/json');
+      expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
+      expect(sentRequest.body).toBeUndefined();
+      expect(response).toEqual(mockPaginatedResponse);
     } finally {
       sendStub.restore();
     }
@@ -202,22 +209,19 @@ Deno.test('GroupsEndpoint', async (t) => {
   await t.step('getById() - sends correct HTTP request', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockSingleGroupResponse));
-
     try {
-      const result = await endpoint.getById('test-group-123');
-
-      // Verify HTTP client was called correctly
+      const response = await endpoint.getById('test-group-123');
       expect(sendStub.calls.length).toBe(1);
-
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
       expect(sentRequest.path).toBe('/groups/test-group-123');
       expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups/test-group-123');
       expect(sentRequest.query).toBeUndefined();
+      expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
+      expect(sentRequest.headers?.['Accept']).toBe('application/json');
+      expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
       expect(sentRequest.body).toBeUndefined();
-
-      // Verify response
-      expect(result).toEqual(mockSingleGroupResponse);
+      expect(response).toEqual(mockSingleGroupResponse);
     } finally {
       sendStub.restore();
     }
@@ -226,28 +230,24 @@ Deno.test('GroupsEndpoint', async (t) => {
   await t.step('save() - sends correct HTTP request for creating group', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockSingleGroupResponse));
-
     const newGroup = {
       targetName: 'New Group',
       groupType: 'BROADCAST' as const,
       description: 'A new test group',
     };
-
     try {
-      const result = await endpoint.save(newGroup);
-
-      // Verify HTTP client was called correctly
+      const response = await endpoint.save(newGroup);
       expect(sendStub.calls.length).toBe(1);
-
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('POST');
       expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups');
       expect(sentRequest.query).toBeUndefined();
+      expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
+      expect(sentRequest.headers?.['Accept']).toBe('application/json');
+      expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
       expect(sentRequest.body).toEqual(newGroup);
-
-      // Verify response
-      expect(result).toEqual(mockSingleGroupResponse);
+      expect(response).toEqual(mockSingleGroupResponse);
     } finally {
       sendStub.restore();
     }
@@ -256,22 +256,16 @@ Deno.test('GroupsEndpoint', async (t) => {
   await t.step('delete() - sends correct HTTP request', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockEmptyResponse));
-
     try {
-      const result = await endpoint.delete('test-group-123');
-
-      // Verify HTTP client was called correctly
+      const response = await endpoint.delete('test-group-123');
       expect(sendStub.calls.length).toBe(1);
-
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('DELETE');
       expect(sentRequest.path).toBe('/groups/test-group-123');
       expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups/test-group-123');
       expect(sentRequest.query).toBeUndefined();
       expect(sentRequest.body).toBeUndefined();
-
-      // Verify response
-      expect(result).toEqual(mockEmptyResponse);
+      expect(response).toEqual(mockEmptyResponse);
     } finally {
       sendStub.restore();
     }
@@ -283,13 +277,19 @@ Deno.test('GroupsEndpoint', async (t) => {
       hostname: 'https://oauth.xmatters.com',
     });
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
-
     try {
-      await endpoint.getGroups();
-
+      const response = await endpoint.getGroups();
+      expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
-      expect(sentRequest.headers?.['Authorization']).toBe('Bearer test-access-token');
+      expect(sentRequest.method).toBe('GET');
+      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe('https://oauth.xmatters.com/api/xm/1/groups');
+      expect(sentRequest.query).toBeUndefined();
+      expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
+      expect(sentRequest.headers?.['Accept']).toBe('application/json');
+      expect(sentRequest.headers?.['Authorization']).toBe('Bearer test-access-token');
+      expect(sentRequest.body).toBeUndefined();
+      expect(response).toEqual(mockPaginatedResponse);
     } finally {
       sendStub.restore();
     }
@@ -303,7 +303,6 @@ Deno.test('GroupsEndpoint', async (t) => {
       body: { message: 'Group not found' },
     };
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(errorResponse));
-
     try {
       let thrownError: unknown;
       try {
@@ -311,8 +310,6 @@ Deno.test('GroupsEndpoint', async (t) => {
       } catch (error) {
         thrownError = error;
       }
-
-      // Verify error was thrown
       expect(thrownError).toBeInstanceOf(XmApiError);
       const xmError = thrownError as XmApiError;
       expect(xmError.message).toBe('Group not found'); // Uses the message from response body
@@ -327,7 +324,6 @@ Deno.test('GroupsEndpoint', async (t) => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const networkError = new Error('Network connection failed');
     const sendStub = stub(mockHttpClient, 'send', () => Promise.reject(networkError));
-
     try {
       let thrownError: unknown;
       try {
@@ -335,8 +331,6 @@ Deno.test('GroupsEndpoint', async (t) => {
       } catch (error) {
         thrownError = error;
       }
-
-      // Verify error was thrown and wrapped
       expect(thrownError).toBeInstanceOf(XmApiError);
       const xmError = thrownError as XmApiError;
       expect(xmError.message).toBe('Request failed'); // Generic message for network errors
@@ -351,12 +345,19 @@ Deno.test('GroupsEndpoint', async (t) => {
       hostname: 'https://custom.xmatters.com',
     });
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
-
     try {
-      await endpoint.getGroups();
-
+      const response = await endpoint.getGroups();
+      expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
+      expect(sentRequest.method).toBe('GET');
+      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe('https://custom.xmatters.com/api/xm/1/groups');
+      expect(sentRequest.query).toBeUndefined();
+      expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
+      expect(sentRequest.headers?.['Accept']).toBe('application/json');
+      expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
+      expect(sentRequest.body).toBeUndefined();
+      expect(response).toEqual(mockPaginatedResponse);
     } finally {
       sendStub.restore();
     }
@@ -368,17 +369,26 @@ Deno.test('GroupsEndpoint', async (t) => {
       password: 'testpass',
     });
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
-
     try {
-      await endpoint.getGroups();
-
+      const response = await endpoint.getGroups();
+      expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
+      expect(sentRequest.method).toBe('GET');
+      expect(sentRequest.path).toBe('/groups');
+      expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups');
+      expect(sentRequest.query).toBeUndefined();
+      expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
+      expect(sentRequest.headers?.['Accept']).toBe('application/json');
+      // Verify the basic auth header
+      expect(sentRequest.headers?.['Authorization']).toBeDefined();
+      expect(sentRequest.headers?.['Authorization']).toBe('Basic ' + btoa('testuser:testpass'));
       expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
-
       // Verify the basic auth encoding
       const authPart = sentRequest.headers?.['Authorization']?.split(' ')[1];
       const decoded = atob(authPart!);
       expect(decoded).toBe('testuser:testpass');
+      expect(sentRequest.body).toBeUndefined();
+      expect(response).toEqual(mockPaginatedResponse);
     } finally {
       sendStub.restore();
     }
@@ -387,7 +397,6 @@ Deno.test('GroupsEndpoint', async (t) => {
   await t.step('save() with full group object - sends all fields correctly', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockSingleGroupResponse));
-
     const fullGroup: Partial<Group> = {
       id: 'existing-group-123',
       targetName: 'Updated Group',
@@ -397,14 +406,19 @@ Deno.test('GroupsEndpoint', async (t) => {
       description: 'Updated test group',
       supervisors: ['user1', 'user2'],
     };
-
     try {
-      await endpoint.save(fullGroup);
-
+      const response = await endpoint.save(fullGroup);
+      expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('POST');
-      expect(sentRequest.body).toEqual(fullGroup);
+      expect(sentRequest.path).toBe('/groups');
+      expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups');
+      expect(sentRequest.query).toBeUndefined();
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
+      expect(sentRequest.headers?.['Accept']).toBe('application/json');
+      expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
+      expect(sentRequest.body).toEqual(fullGroup);
+      expect(response).toEqual(mockSingleGroupResponse);
     } finally {
       sendStub.restore();
     }
@@ -413,19 +427,27 @@ Deno.test('GroupsEndpoint', async (t) => {
   await t.step('getGroups() with all possible parameters', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
-
     const params = {
       limit: 25,
       offset: 50,
       search: 'test search',
       // Add other params that might exist in GetGroupsParams
     };
-
     try {
-      await endpoint.getGroups(params);
-
+      const response = await endpoint.getGroups(params);
+      expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
+      expect(sentRequest.method).toBe('GET');
+      expect(sentRequest.path).toBe('/groups');
+      expect(sentRequest.url).toBe(
+        'https://example.xmatters.com/api/xm/1/groups?limit=25&offset=50&search=test+search',
+      );
       expect(sentRequest.query).toEqual(params);
+      expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
+      expect(sentRequest.headers?.['Accept']).toBe('application/json');
+      expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
+      expect(sentRequest.body).toBeUndefined();
+      expect(response).toEqual(mockPaginatedResponse);
     } finally {
       sendStub.restore();
     }
@@ -433,10 +455,8 @@ Deno.test('GroupsEndpoint', async (t) => {
 
   await t.step('retries on rate limit with Retry-After', async () => {
     const fakeTime = new FakeTime();
-
     try {
-      const { mockHttpClient, endpoint } = createEndpointTestSetup();
-
+      const { mockHttpClient, mockLogger, endpoint } = createEndpointTestSetup();
       const rateLimitResponse = {
         status: 429,
         headers: { 'retry-after': '2', 'content-type': 'application/json' },
@@ -447,7 +467,6 @@ Deno.test('GroupsEndpoint', async (t) => {
         headers: { 'content-type': 'application/json' },
         body: { count: 2, total: 10, data: mockGroupsList },
       };
-
       let callCount = 0;
       const sendStub = stub(mockHttpClient, 'send', () => {
         callCount++;
@@ -455,28 +474,28 @@ Deno.test('GroupsEndpoint', async (t) => {
           ? Promise.resolve(rateLimitResponse)
           : Promise.resolve(successResponse);
       });
-
+      const loggerStub = stub(mockLogger, 'debug', () => {});
       try {
         // Start the request
         const requestPromise = endpoint.getGroups();
-
         // Allow the first request to complete and set up the timer
         await fakeTime.nextAsync();
         // Now advance time to trigger the retry
         await fakeTime.nextAsync();
-
         const response = await requestPromise;
         expect(response.body).toEqual(successResponse.body);
         expect(sendStub.calls.length).toBe(2);
-
         // Verify both calls were GET requests to /groups
         const firstRequest: HttpRequest = sendStub.calls[0].args[0];
         expect(firstRequest.method).toBe('GET');
         expect(firstRequest.path).toBe('/groups');
-
         const retryRequest: HttpRequest = sendStub.calls[1].args[0];
         expect(retryRequest.method).toBe('GET');
         expect(retryRequest.path).toBe('/groups');
+        expect(loggerStub.calls.length).toBe(1);
+        expect(loggerStub.calls[0].args[0]).toBe(
+          'Request failed with status 429, retrying in 2000ms (attempt 1/3)',
+        );
       } finally {
         sendStub.restore();
       }
@@ -487,17 +506,14 @@ Deno.test('GroupsEndpoint', async (t) => {
 
   await t.step('handles errors without response body', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
-
     const errorResponse = {
       status: 400, // Use 400 instead of 502 to avoid retry logic
       headers: { 'content-type': 'text/plain' },
       body: '', // Empty response body
     };
-
     const sendStub = stub(mockHttpClient, 'send', () => {
       return Promise.resolve(errorResponse);
     });
-
     try {
       let thrownError: unknown;
       try {
@@ -505,18 +521,13 @@ Deno.test('GroupsEndpoint', async (t) => {
       } catch (error) {
         thrownError = error;
       }
-
-      // Verify error was thrown
-      expect(thrownError).toBeInstanceOf(XmApiError);
-      const xmError = thrownError as XmApiError;
-
-      // Verify fallback error message includes status code
-      expect(xmError.message).toContain('400');
-      expect(xmError.response?.status).toBe(400);
-      expect(xmError.response?.body).toBe('');
-
       // Verify it was called only once (no retries for 400)
       expect(sendStub.calls.length).toBe(1);
+      expect(thrownError).toBeInstanceOf(XmApiError);
+      const xmError = thrownError as XmApiError;
+      expect(xmError.message).toBe('Request failed with status 400');
+      expect(xmError.response?.status).toBe(400);
+      expect(xmError.response?.body).toBe('');
     } finally {
       sendStub.restore();
     }
