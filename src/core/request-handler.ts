@@ -227,24 +227,7 @@ export class RequestHandler {
             retryAttempt: currentAttempt + 1,
           });
         }
-
-        // Try to extract a descriptive message from the response
-        let message = `Request failed with status ${response.status}`;
-        if (response.body && typeof response.body === 'object' && 'message' in response.body) {
-          message = String(response.body.message);
-        } else if (typeof response.body === 'string' && response.body.trim()) {
-          message = response.body.trim();
-        }
-
-        // Add error code if available
-        if (response.body && typeof response.body === 'object' && 'code' in response.body) {
-          message = `${response.body.code}: ${message}`;
-        }
-
-        throw new XmApiError(
-          message,
-          response,
-        );
+        throw new XmApiError('', response);
       }
 
       return response as HttpResponse<T>;
