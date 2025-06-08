@@ -33,19 +33,6 @@ export class ResourceClient {
     return `${this.basePath}/${cleanPath}`;
   }
 
-  /**
-   * Send a request with custom options.
-   * This is a low-level method that bypasses the automatic base path handling.
-   * Use this when you need complete control over the request path.
-   *
-   * @returns The full HTTP response
-   */
-  send<T>(
-    request: Partial<HttpRequest> & { path: string; method: HttpRequest['method'] },
-  ) {
-    return this.http.send<T>(request);
-  }
-
   get<T>(options: Omit<GetOptions, 'path'> & { path?: string }) {
     return this.http.get<T>({
       ...options,
