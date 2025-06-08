@@ -39,6 +39,8 @@ function createEndpointTestSetup(options: {
   refreshToken?: string;
   clientId?: string;
   maxRetries?: number;
+  onTokenRefresh?: (accessToken: string, refreshToken: string) => Promise<void>;
+  expiredToken?: boolean;
 } = {}) {
   const {
     hostname = 'https://example.xmatters.com',
@@ -48,6 +50,8 @@ function createEndpointTestSetup(options: {
     refreshToken,
     clientId,
     maxRetries = 3,
+    onTokenRefresh,
+    expiredToken = false,
   } = options;
 
   // Create silent mock logger
@@ -70,11 +74,14 @@ function createEndpointTestSetup(options: {
   // Create token state for OAuth options if needed
   let tokenState: TokenState | undefined;
   if (accessToken) {
+    const expiresAt = expiredToken
+      ? new Date(Date.now() - 1000).toISOString() // Already expired
+      : new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes from now
     tokenState = {
       accessToken,
       refreshToken: refreshToken || '',
       clientId,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes from now
+      expiresAt,
       scopes: [],
     };
   }
@@ -84,7 +91,7 @@ function createEndpointTestSetup(options: {
     mockLogger,
     mockOptions,
     maxRetries,
-    undefined, // onTokenRefresh callback
+    onTokenRefresh,
     tokenState,
   );
   const endpoint = new GroupsEndpoint(requestHandler);
@@ -474,7 +481,7 @@ Deno.test('GroupsEndpoint', async (t) => {
           ? Promise.resolve(rateLimitResponse)
           : Promise.resolve(successResponse);
       });
-      const loggerStub = stub(mockLogger, 'debug', () => {});
+      const debugStub = stub(mockLogger, 'debug', () => {});
       try {
         // Start the request
         const requestPromise = endpoint.getGroups();
@@ -492,15 +499,173 @@ Deno.test('GroupsEndpoint', async (t) => {
         const retryRequest: HttpRequest = sendStub.calls[1].args[0];
         expect(retryRequest.method).toBe('GET');
         expect(retryRequest.path).toBe('/groups');
-        expect(loggerStub.calls.length).toBe(1);
-        expect(loggerStub.calls[0].args[0]).toBe(
+        expect(debugStub.calls.length).toBe(1);
+        expect(debugStub.calls[0].args[0]).toBe(
           'Request failed with status 429, retrying in 2000ms (attempt 1/3)',
         );
       } finally {
         sendStub.restore();
+        debugStub.restore();
       }
     } finally {
       fakeTime.restore();
+    }
+  });
+
+  await t.step('retries on server error with debug logging', async () => {
+    const fakeTime = new FakeTime();
+    try {
+      const { mockHttpClient, mockLogger, endpoint } = createEndpointTestSetup();
+      const serverErrorResponse = {
+        status: 503,
+        headers: { 'content-type': 'application/json' },
+        body: { message: 'Service unavailable' },
+      };
+      const successResponse = {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+        body: { count: 1, total: 1, data: [mockGroup] },
+      };
+      let callCount = 0;
+      const sendStub = stub(mockHttpClient, 'send', () => {
+        callCount++;
+        return callCount === 1
+          ? Promise.resolve(serverErrorResponse)
+          : Promise.resolve(successResponse);
+      });
+      const debugStub = stub(mockLogger, 'debug', () => {});
+      try {
+        // Start the request
+        const requestPromise = endpoint.getGroups();
+        // Allow the first request to complete and set up the timer
+        await fakeTime.nextAsync();
+        // Now advance time to trigger the retry
+        await fakeTime.nextAsync();
+        const response = await requestPromise;
+        expect(response.body).toEqual(successResponse.body);
+        expect(sendStub.calls.length).toBe(2);
+        // Verify debug logger was called with correct retry message
+        expect(debugStub.calls.length).toBe(1);
+        expect(debugStub.calls[0].args[0]).toBe(
+          'Request failed with status 503, retrying in 1000ms (attempt 1/3)',
+        );
+      } finally {
+        sendStub.restore();
+        debugStub.restore();
+      }
+    } finally {
+      fakeTime.restore();
+    }
+  });
+
+  await t.step('logs warning when onTokenRefresh callback throws error', async () => {
+    // Create a RequestHandler with an onTokenRefresh callback that throws
+    const throwingCallback = () => {
+      throw new Error('Callback error');
+    };
+    const { mockHttpClient, mockLogger, endpoint } = createEndpointTestSetup({
+      accessToken: 'expired-token',
+      refreshToken: 'valid-refresh-token',
+      clientId: 'test-client-id',
+      onTokenRefresh: throwingCallback,
+      expiredToken: true,
+    });
+    const unauthorizedResponse = {
+      status: 401,
+      headers: { 'content-type': 'application/json' },
+      body: { message: 'Token expired' },
+    };
+
+    const tokenRefreshResponse = {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+      body: {
+        access_token: 'new-access-token',
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600,
+      },
+    };
+
+    const successResponse = {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+      body: { count: 1, total: 1, data: [mockGroup] },
+    };
+
+    let callCount = 0;
+    const sendStub = stub(mockHttpClient, 'send', (request: HttpRequest) => {
+      callCount++;
+      // Check if this is a token refresh request
+      if (request.path === '/oauth2/token' || request.url?.includes('/oauth2/token')) {
+        return Promise.resolve(tokenRefreshResponse);
+      }
+      // Otherwise it's the main API request
+      if (callCount === 1) return Promise.resolve(unauthorizedResponse);
+      return Promise.resolve(successResponse);
+    });
+    const warnStub = stub(mockLogger, 'warn', () => {});
+    try {
+      const response = await endpoint.getGroups();
+      expect(response.status).toBe(200);
+      expect(sendStub.calls.length).toBe(2); // token refresh, main request
+      expect(warnStub.calls.length).toBe(1);
+      expect(warnStub.calls[0].args[0]).toBe(
+        'Error in onTokenRefresh callback, but continuing with refreshed token',
+      );
+      expect(warnStub.calls[0].args[1]).toBeInstanceOf(Error);
+      expect((warnStub.calls[0].args[1] as Error).message).toBe('Callback error');
+    } finally {
+      sendStub.restore();
+      warnStub.restore();
+    }
+  });
+
+  await t.step('logs error when token refresh fails', async () => {
+    const { mockHttpClient, mockLogger, endpoint } = createEndpointTestSetup({
+      accessToken: 'expired-token',
+      refreshToken: 'invalid-refresh-token',
+      clientId: 'test-client-id',
+      expiredToken: true,
+    });
+
+    const unauthorizedResponse = {
+      status: 401,
+      headers: { 'content-type': 'application/json' },
+      body: { message: 'Token expired' },
+    };
+
+    const tokenRefreshErrorResponse = {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+      body: { error: 'invalid_grant', error_description: 'Invalid refresh token' },
+    };
+
+    let callCount = 0;
+    const sendStub = stub(mockHttpClient, 'send', (request: HttpRequest) => {
+      callCount++;
+      // Check if this is a token refresh request
+      if (request.path === '/oauth2/token' || request.url?.includes('/oauth2/token')) {
+        return Promise.resolve(tokenRefreshErrorResponse);
+      }
+      // Otherwise it's the main API request
+      return Promise.resolve(unauthorizedResponse);
+    });
+    const errorStub = stub(mockLogger, 'error', () => {});
+    try {
+      let thrownError: unknown;
+      try {
+        await endpoint.getGroups();
+      } catch (error) {
+        thrownError = error;
+      }
+      expect(thrownError).toBeInstanceOf(XmApiError);
+      expect(sendStub.calls.length).toBe(1); // failed token refresh only
+      expect(errorStub.calls.length).toBe(1);
+      expect(errorStub.calls[0].args[0]).toBe('Failed to refresh token:');
+      expect(errorStub.calls[0].args[1]).toBeInstanceOf(XmApiError);
+    } finally {
+      sendStub.restore();
+      errorStub.restore();
     }
   });
 
