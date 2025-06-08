@@ -314,7 +314,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       const xmError = thrownError as XmApiError;
       expect(xmError.message).toBe('Group not found'); // Uses the message from response body
       expect(xmError.response?.status).toBe(404);
-      expect(xmError.response?.body).toBe('{"message":"Group not found"}');
+      expect(xmError.response?.body).toEqual({ message: 'Group not found' });
     } finally {
       sendStub.restore();
     }

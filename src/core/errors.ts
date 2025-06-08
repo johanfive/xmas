@@ -11,8 +11,8 @@ export class XmApiError extends Error {
   constructor(
     message: string,
     public readonly response?: {
-      /** The response body as a string */
-      body: string;
+      /** The response body in its original format */
+      body: unknown;
       /** The HTTP status code that triggered this error */
       status: number;
       /** Response headers that may contain additional error context */

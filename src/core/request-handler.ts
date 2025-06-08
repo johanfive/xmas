@@ -16,38 +16,6 @@ export class RequestHandler {
   /** Request builder for creating HTTP requests */
   private readonly requestBuilder: RequestBuilder;
 
-  /**
-   * Helper method to safely convert a response body to a string for error messages
-   */
-  private stringifyErrorBody(body: unknown): string {
-    if (typeof body === 'string') {
-      return body;
-    }
-    if (body && typeof body === 'object') {
-      try {
-        return JSON.stringify(body);
-      } catch {
-        return '[Unable to stringify error body]';
-      }
-    }
-    return String(body ?? '[No error details available]');
-  }
-
-  /**
-   * Helper method to create an error response
-   */
-  private createErrorResponse(response: HttpResponse): {
-    body: string;
-    status: number;
-    headers: Record<string, string>;
-  } {
-    return {
-      body: this.stringifyErrorBody(response.body),
-      status: response.status,
-      headers: response.headers,
-    };
-  }
-
   constructor(
     private readonly client: HttpClient,
     private readonly logger: Logger,
@@ -110,13 +78,13 @@ export class RequestHandler {
       const response = await this.client.send(refreshRequest);
 
       if (response.status !== 200 || !response.body) {
-        throw new XmApiError('Failed to refresh token', this.createErrorResponse(response));
+        throw new XmApiError('Failed to refresh token', response);
       }
 
       if (typeof response.body !== 'object' || !response.body) {
         throw new XmApiError(
           'Invalid token response format',
-          this.createErrorResponse(response),
+          response,
         );
       }
 
@@ -130,7 +98,7 @@ export class RequestHandler {
       if (!body.access_token || !body.refresh_token) {
         throw new XmApiError(
           'Token response missing required fields',
-          this.createErrorResponse(response),
+          response,
         );
       }
 
@@ -275,7 +243,7 @@ export class RequestHandler {
 
         throw new XmApiError(
           message,
-          this.createErrorResponse(response),
+          response,
         );
       }
 
