@@ -1,281 +1,389 @@
-import {
-  assertEquals,
-  assertExists,
-  assertRejects,
-} from 'https://deno.land/std@0.193.0/testing/asserts.ts';
+/**
+ * @fileoverview Test suite for RequestHandler class
+ *
+ * This test file follows the established patterns from the groups endpoint test:
+ * - Uses expect assertions for consistency across the codebase
+ * - Implements test setup helpers for creating mock dependencies
+ * - Uses try/finally blocks to ensure proper cleanup of stubs
+ * - Creates mock data objects for reusable test responses
+ * - Follows descriptive test step naming conventions
+ * - Tests both success and error scenarios comprehensively
+ */
+
+import { expect } from 'https://deno.land/std@0.224.0/expect/mod.ts';
+import { FakeTime } from 'https://deno.land/std@0.224.0/testing/time.ts';
 import { RequestHandler } from './request-handler.ts';
-import { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
+import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
+import type { Logger, XmApiOptions } from './types/internal/config.ts';
+import type { TokenState } from './types/internal/oauth.ts';
 import { XmApiError } from './errors.ts';
 
-class TestHttpClient implements HttpClient {
+/**
+ * Mock HTTP client that can simulate sequential responses for testing retry logic
+ */
+class MockHttpClient implements HttpClient {
+  private responses: HttpResponse[] = [];
+  private callIndex = 0;
   public requests: HttpRequest[] = [];
-  public responses: HttpResponse[] = [];
-  public forceError?: Error;
+
+  constructor(responses: HttpResponse[]) {
+    this.responses = responses;
+  }
 
   send(request: HttpRequest): Promise<HttpResponse> {
     this.requests.push(request);
-    if (this.forceError) {
-      return Promise.reject(this.forceError);
-    }
-    return Promise.resolve(
-      this.responses[this.requests.length - 1] || this.responses[this.responses.length - 1],
-    );
+    const response = this.responses[this.callIndex] || this.responses[this.responses.length - 1];
+    this.callIndex++;
+    return Promise.resolve(response);
+  }
+
+  reset() {
+    this.callIndex = 0;
+    this.requests = [];
   }
 }
 
-const mockLogger = {
-  debug: () => {},
-  info: () => {},
-  warn: () => {},
-  error: () => {},
+/**
+ * Test helper to create RequestHandler test setup
+ */
+function createRequestHandlerTestSetup(options: {
+  hostname?: string;
+  username?: string;
+  password?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  clientId?: string;
+  maxRetries?: number;
+  responses?: HttpResponse[];
+} = {}) {
+  const {
+    hostname = 'https://example.xmatters.com',
+    username = 'testuser',
+    password = 'password123',
+    accessToken,
+    refreshToken,
+    clientId,
+    maxRetries = 3,
+    responses = [mockSuccessResponse],
+  } = options;
+
+  // Create silent mock logger
+  const mockLogger: Logger = {
+    debug: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+  };
+
+  // Create auth options based on provided parameters
+  const mockOptions: XmApiOptions = accessToken
+    ? { hostname, accessToken, refreshToken, clientId }
+    : { hostname, username, password };
+
+  const mockHttpClient = new MockHttpClient(responses);
+
+  // Create token state for OAuth options if needed
+  let tokenState: TokenState | undefined;
+  if (accessToken) {
+    tokenState = {
+      accessToken,
+      refreshToken: refreshToken || '',
+      clientId,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes from now
+      scopes: [],
+    };
+  }
+
+  const requestHandler = new RequestHandler(
+    mockHttpClient,
+    mockLogger,
+    mockOptions,
+    maxRetries,
+    undefined, // onTokenRefresh callback
+    tokenState,
+  );
+
+  return { mockHttpClient, requestHandler, mockLogger };
+}
+
+// Mock response data for tests
+const mockSuccessResponse: HttpResponse = {
+  status: 200,
+  headers: { 'content-type': 'application/json' },
+  body: { success: true },
 };
 
-const basicOptions = {
-  hostname: 'https://example.com',
-  username: 'testuser',
-  password: 'password123',
-  defaultHeaders: {},
+const mockErrorResponse: HttpResponse = {
+  status: 400,
+  headers: { 'content-type': 'text/plain' },
+  body: 'Invalid request',
 };
 
-const oauthOptions = {
-  hostname: 'https://example.com',
-  accessToken: 'access-token',
-  refreshToken: 'refresh-token',
-  clientId: 'client-id',
-  defaultHeaders: {},
+const mockRateLimitResponse: HttpResponse = {
+  status: 429,
+  headers: { 'retry-after': '1' },
+  body: { message: 'Too many requests' },
+};
+
+const mockServerErrorResponse: HttpResponse = {
+  status: 503,
+  headers: {},
+  body: { message: 'Service unavailable' },
+};
+
+const mockUnauthorizedResponse: HttpResponse = {
+  status: 401,
+  headers: {},
+  body: { message: 'Token expired' },
+};
+
+const mockTokenRefreshResponse: HttpResponse = {
+  status: 200,
+  headers: { 'content-type': 'application/json' },
+  body: {
+    access_token: 'new-token',
+    refresh_token: 'new-refresh-token',
+    expires_in: 3600,
+  },
 };
 
 Deno.test('RequestHandler', async (t) => {
   await t.step('handles non-JSON response bodies', async () => {
-    const client = new TestHttpClient();
-    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
+    const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
+      responses: [mockErrorResponse],
+    });
 
-    client.responses = [{
-      status: 400,
-      headers: { 'content-type': 'text/plain' },
-      body: 'Invalid request',
-    }];
+    try {
+      let thrownError: unknown;
+      try {
+        await requestHandler.get({ path: '/test' });
+      } catch (error) {
+        thrownError = error;
+      }
 
-    await assertRejects(
-      async () => await handler.get({ path: '/test' }),
-      XmApiError,
-      'Invalid request',
-    );
+      expect(thrownError).toBeInstanceOf(XmApiError);
+      const xmError = thrownError as XmApiError;
+      expect(xmError.message).toBe('Invalid request');
+      expect(mockHttpClient.requests.length).toBe(1);
+    } finally {
+      mockHttpClient.reset();
+    }
   });
 
   await t.step('retries on rate limit with Retry-After', async () => {
-    const client = new TestHttpClient();
-    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
+    const fakeTime = new FakeTime();
+    try {
+      const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
+        responses: [mockRateLimitResponse, mockSuccessResponse],
+      });
 
-    client.responses = [
-      {
-        status: 429,
-        headers: { 'retry-after': '1' },
-        body: { message: 'Too many requests' },
-      },
-      {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-        body: { success: true },
-      },
-    ];
+      const requestPromise = requestHandler.get({ path: '/test' });
 
-    const response = await handler.get({ path: '/test' });
-    assertEquals(response.status, 200);
-    assertEquals(client.requests.length, 2);
-    assertEquals(client.requests[1].retryAttempt, 1);
+      // Allow the first request to complete and set up the timer
+      await fakeTime.nextAsync();
+      // Now advance time to trigger the retry
+      await fakeTime.nextAsync();
+
+      const response = await requestPromise;
+
+      expect(response.status).toBe(200);
+      expect(mockHttpClient.requests.length).toBe(2);
+
+      // Verify first request
+      const firstRequest = mockHttpClient.requests[0];
+      expect(firstRequest.path).toBe('/test');
+      expect(firstRequest.retryAttempt).toBe(0);
+
+      // Verify retry request
+      const retryRequest = mockHttpClient.requests[1];
+      expect(retryRequest.path).toBe('/test');
+      expect(retryRequest.retryAttempt).toBe(1);
+    } finally {
+      fakeTime.restore();
+    }
   });
 
   await t.step('retries with exponential backoff on server error', async () => {
-    const client = new TestHttpClient();
-    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
+    const fakeTime = new FakeTime();
+    try {
+      const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
+        responses: [mockServerErrorResponse, mockSuccessResponse],
+      });
 
-    client.responses = [
-      {
-        status: 503,
-        headers: {},
-        body: { message: 'Service unavailable' },
-      },
-      {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-        body: { success: true },
-      },
-    ];
+      const requestPromise = requestHandler.get({ path: '/test' });
 
-    const response = await handler.get({ path: '/test' });
-    assertEquals(response.status, 200);
-    assertEquals(client.requests.length, 2);
-    assertEquals(client.requests[1].retryAttempt, 1);
+      // Allow the first request to complete and set up the timer
+      await fakeTime.nextAsync();
+      // Now advance time to trigger the retry
+      await fakeTime.nextAsync();
+
+      const response = await requestPromise;
+
+      expect(response.status).toBe(200);
+      expect(mockHttpClient.requests.length).toBe(2);
+
+      // Verify retry attempt increments
+      const retryRequest = mockHttpClient.requests[1];
+      expect(retryRequest.retryAttempt).toBe(1);
+    } finally {
+      fakeTime.restore();
+    }
   });
 
   await t.step('stops retrying after max attempts', async () => {
-    const client = new TestHttpClient();
-    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
+    const fakeTime = new FakeTime();
+    try {
+      const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
+        maxRetries: 3, // Use full retry count to properly test the behavior
+        responses: [mockServerErrorResponse], // Will repeat the error response
+      });
 
-    client.responses = Array(5).fill({
-      status: 503,
-      headers: {},
-      body: { message: 'Service unavailable' },
-    });
+      let thrownError: unknown;
+      const requestPromise = requestHandler.get({ path: '/test' }).catch((error) => {
+        thrownError = error;
+      });
 
-    await assertRejects(
-      async () => await handler.get({ path: '/test' }),
-      XmApiError,
-      'Service unavailable',
-    );
+      // Allow all request attempts and retries to complete
+      // The pattern is: request -> setTimeout -> retry -> setTimeout -> retry -> etc.
+      await fakeTime.nextAsync(); // First request completes, setTimeout for retry 1
+      await fakeTime.nextAsync(); // Retry 1 completes, setTimeout for retry 2
+      await fakeTime.nextAsync(); // Retry 2 completes, setTimeout for retry 3
+      await fakeTime.nextAsync(); // Retry 3 completes, should throw error
 
-    assertEquals(client.requests.length, 4); // Initial + 3 retries
+      await requestPromise;
+
+      expect(thrownError).toBeInstanceOf(XmApiError);
+      const xmError = thrownError as XmApiError;
+      expect(xmError.message).toBe('Service unavailable');
+      expect(mockHttpClient.requests.length).toBe(4); // Initial + 3 retries (maxRetries=3)
+
+      // Verify each request has the correct retry attempt number
+      expect(mockHttpClient.requests[0].retryAttempt).toBe(0);
+      expect(mockHttpClient.requests[1].retryAttempt).toBe(1);
+      expect(mockHttpClient.requests[2].retryAttempt).toBe(2);
+      expect(mockHttpClient.requests[3].retryAttempt).toBe(3);
+
+      mockHttpClient.reset();
+    } finally {
+      fakeTime.restore();
+    }
   });
 
   await t.step('handles network errors', async () => {
-    const client = new TestHttpClient();
-    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
+    const { mockHttpClient: _mockHttpClient } = createRequestHandlerTestSetup();
 
-    client.forceError = new Error('Network error');
+    // Create a separate mock client that throws network errors
+    const mockHttpClient: HttpClient = {
+      send: () => Promise.reject(new Error('Network error')),
+    };
+
+    const networkRequestHandler = new RequestHandler(
+      mockHttpClient,
+      { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
+      { hostname: 'https://example.xmatters.com', username: 'test', password: 'test' },
+      3,
+    );
 
     try {
-      await handler.get({ path: '/test' });
-      throw new Error('Expected error to be thrown');
-    } catch (error: unknown) {
-      assertExists(error);
-      assertEquals(error instanceof XmApiError, true);
-      const xmError = error as XmApiError;
-      assertEquals(xmError.message, 'Request failed');
-      assertEquals(xmError.response, undefined);
-      assertEquals(xmError.cause instanceof Error, true);
-      assertEquals((xmError.cause as Error).message, 'Network error');
+      let thrownError: unknown;
+      try {
+        await networkRequestHandler.get({ path: '/test' });
+      } catch (error) {
+        thrownError = error;
+      }
+
+      expect(thrownError).toBeInstanceOf(XmApiError);
+      const xmError = thrownError as XmApiError;
+      expect(xmError.message).toBe('Request failed');
+      expect(xmError.response).toBeUndefined();
+      expect(xmError.cause).toBeInstanceOf(Error);
+      expect((xmError.cause as Error).message).toBe('Network error');
+    } finally {
+      // No cleanup needed for this test
     }
   });
 
   await t.step('adds Basic Auth header to requests', async () => {
-    const client = new TestHttpClient();
-    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
+    const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup();
 
-    client.responses = [{
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-      body: { success: true },
-    }];
+    try {
+      await requestHandler.get({ path: '/test' });
 
-    await handler.get({ path: '/test' });
+      expect(mockHttpClient.requests.length).toBe(1);
+      const sentRequest = mockHttpClient.requests[0];
+      expect(sentRequest.headers?.Authorization).toBeDefined();
 
-    assertEquals(client.requests.length, 1);
-    const request = client.requests[0];
-    assertExists(request.headers?.Authorization);
-
-    // Verify it's Basic auth
-    const [authType] = request.headers.Authorization.split(' ');
-    assertEquals(authType, 'Basic');
+      // Verify it's Basic auth
+      const authHeader = sentRequest.headers!.Authorization!;
+      const [authType] = authHeader.split(' ');
+      expect(authType).toBe('Basic');
+    } finally {
+      mockHttpClient.reset();
+    }
   });
 
   await t.step('adds OAuth Bearer token to requests', async () => {
-    const client = new TestHttpClient();
-    const initialTokenState = {
+    const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
       accessToken: 'test-access-token',
       refreshToken: 'test-refresh-token',
       clientId: 'client-id',
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      scopes: [],
-    };
-    const handler = new RequestHandler(
-      client,
-      mockLogger,
-      oauthOptions,
-      3,
-      undefined,
-      initialTokenState,
-    );
+    });
 
-    client.responses = [{
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-      body: { success: true },
-    }];
+    try {
+      await requestHandler.get({ path: '/test' });
 
-    await handler.get({ path: '/test' });
-
-    assertEquals(client.requests.length, 1);
-    const request = client.requests[0];
-    assertEquals(request.headers?.Authorization, 'Bearer test-access-token');
+      expect(mockHttpClient.requests.length).toBe(1);
+      const sentRequest = mockHttpClient.requests[0];
+      expect(sentRequest.headers?.Authorization).toBe('Bearer test-access-token');
+    } finally {
+      mockHttpClient.reset();
+    }
   });
 
   await t.step('refreshes token on 401 response', async () => {
-    const client = new TestHttpClient();
-    const initialTokenState = {
+    const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
       accessToken: 'old-token',
       refreshToken: 'refresh-token',
       clientId: 'client-id',
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      scopes: [],
-    };
-    const handler = new RequestHandler(
-      client,
-      mockLogger,
-      oauthOptions,
-      3,
-      undefined,
-      initialTokenState,
-    );
+      responses: [mockUnauthorizedResponse, mockTokenRefreshResponse, mockSuccessResponse],
+    });
 
-    client.responses = [
-      // Initial request fails with 401
-      {
-        status: 401,
-        headers: {},
-        body: { message: 'Token expired' },
-      },
-      // Token refresh succeeds
-      {
-        status: 200,
-        headers: { 'content-type': 'application/json' },
-        body: {
-          access_token: 'new-token',
-          refresh_token: 'new-refresh-token',
-          expires_in: 3600,
-        },
-      },
-      // Original request succeeds with new token
-      {
-        status: 200,
-        headers: {},
-        body: { success: true },
-      },
-    ];
+    try {
+      const response = await requestHandler.get({ path: '/test' });
 
-    const response = await handler.get({ path: '/test' });
-    assertEquals(response.status, 200);
-    assertEquals(client.requests.length, 3);
+      expect(response.status).toBe(200);
+      expect(mockHttpClient.requests.length).toBe(3);
 
-    // Verify token refresh request
-    const refreshRequest = client.requests[1];
-    assertEquals(refreshRequest.path, '/oauth2/token');
-    assertEquals(refreshRequest.headers?.['Content-Type'], 'application/x-www-form-urlencoded');
-    assertExists(refreshRequest.body);
-    const params = new URLSearchParams(refreshRequest.body as string);
-    assertEquals(params.get('grant_type'), 'refresh_token');
-    assertEquals(params.get('refresh_token'), 'refresh-token');
-    assertEquals(params.get('client_id'), 'client-id');
+      // Verify token refresh request
+      const refreshRequest = mockHttpClient.requests[1];
+      expect(refreshRequest.path).toBe('/oauth2/token');
+      expect(refreshRequest.headers?.['Content-Type']).toBe('application/x-www-form-urlencoded');
+      expect(refreshRequest.body).toBeDefined();
 
-    // Verify retried request uses new token
-    const retriedRequest = client.requests[2];
-    assertEquals(retriedRequest.headers?.Authorization, 'Bearer new-token');
+      const params = new URLSearchParams(refreshRequest.body as string);
+      expect(params.get('grant_type')).toBe('refresh_token');
+      expect(params.get('refresh_token')).toBe('refresh-token');
+      expect(params.get('client_id')).toBe('client-id');
+
+      // Verify retried request uses new token
+      const retriedRequest = mockHttpClient.requests[2];
+      expect(retriedRequest.headers?.Authorization).toBe('Bearer new-token');
+    } finally {
+      mockHttpClient.reset();
+    }
   });
 
   await t.step('skips auth headers when skipAuth is true', async () => {
-    const client = new TestHttpClient();
-    const handler = new RequestHandler(client, mockLogger, basicOptions, 3);
+    const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup();
 
-    client.responses = [{
-      status: 200,
-      headers: { 'content-type': 'application/json' },
-      body: { success: true },
-    }];
+    try {
+      await requestHandler.send({ path: '/oauth2/token', skipAuth: true });
 
-    await handler.send({ path: '/oauth2/token', skipAuth: true });
-
-    assertEquals(client.requests.length, 1);
-    const request = client.requests[0];
-    assertEquals(request.headers?.Authorization, undefined);
+      expect(mockHttpClient.requests.length).toBe(1);
+      const sentRequest = mockHttpClient.requests[0];
+      expect(sentRequest.headers?.Authorization).toBeUndefined();
+    } finally {
+      mockHttpClient.reset();
+    }
   });
 });
