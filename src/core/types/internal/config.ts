@@ -34,6 +34,7 @@ export interface XmApiBaseOptions {
   logger?: Logger;
   defaultHeaders?: Record<string, string>;
   maxRetries?: number;
+  onTokenRefresh?: TokenRefreshCallback; // Optional callback for when OAuth tokens are acquired/refreshed
 }
 
 /**
@@ -43,7 +44,6 @@ export interface XmApiBasicAuthOptions extends XmApiBaseOptions {
   username: string;
   password: string;
   clientId?: string; // Optional for OAuth token acquisition
-  onTokenRefresh?: TokenRefreshCallback; // Optional callback for when OAuth tokens are acquired/refreshed
 }
 
 /**
@@ -63,7 +63,6 @@ export interface XmApiOAuthOptions extends XmApiBaseOptions {
   accessToken: string;
   refreshToken?: string;
   clientId?: string;
-  onTokenRefresh?: TokenRefreshCallback;
 }
 
 /**
