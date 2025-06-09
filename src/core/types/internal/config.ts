@@ -17,6 +17,15 @@ export interface Logger {
 }
 
 /**
+ * Callback function type for token refresh events.
+ * Called when OAuth tokens are refreshed or initially acquired.
+ */
+export type TokenRefreshCallback = (
+  accessToken: string,
+  refreshToken: string,
+) => void | Promise<void>;
+
+/**
  * Base configuration options shared by all authentication methods.
  */
 export interface XmApiBaseOptions {
@@ -33,7 +42,19 @@ export interface XmApiBaseOptions {
 export interface XmApiBasicAuthOptions extends XmApiBaseOptions {
   username: string;
   password: string;
+  clientId?: string; // Optional for OAuth token acquisition
+  onTokenRefresh?: TokenRefreshCallback; // Optional callback for when OAuth tokens are acquired/refreshed
 }
+
+/**
+ * Basic authentication credentials structure.
+ * Used when extracting credentials for OAuth token acquisition.
+ * This is a subset of XmApiBasicAuthOptions containing only the auth fields.
+ */
+export type BasicAuthCredentials = Pick<
+  XmApiBasicAuthOptions,
+  'username' | 'password' | 'clientId'
+>;
 
 /**
  * Configuration options for OAuth authentication with existing tokens.
@@ -42,7 +63,7 @@ export interface XmApiOAuthOptions extends XmApiBaseOptions {
   accessToken: string;
   refreshToken?: string;
   clientId?: string;
-  onTokenRefresh?: (accessToken: string, refreshToken: string) => void | Promise<void>;
+  onTokenRefresh?: TokenRefreshCallback;
 }
 
 /**

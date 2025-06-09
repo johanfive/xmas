@@ -1,45 +1,99 @@
 import { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
 import {
+  BasicAuthCredentials,
   isBasicAuthOptions,
   isOAuthOptions,
   Logger,
+  TokenRefreshCallback,
   XmApiOptions,
 } from './types/internal/config.ts';
 import { DeleteOptions, GetOptions, RequestWithBodyOptions } from './types/internal/methods.ts';
 import { XmApiError } from './errors.ts';
-import { TokenState } from './types/internal/oauth.ts';
+import { OAuth2TokenResponse, TokenState } from './types/internal/oauth.ts';
 import { RequestBuilder } from './request-builder.ts';
+import { DefaultHttpClient, defaultLogger } from './defaults/index.ts';
 
 export class RequestHandler {
+  /** HTTP client for making requests */
+  private readonly client: HttpClient;
+  /** Logger for debug output */
+  private readonly logger: Logger;
   /** Current token state if using OAuth */
   private tokenState?: TokenState;
-  /** Request builder for creating HTTP requests */
+  /** Request builder for creating HTTP requests before sending with the client */
   private readonly requestBuilder: RequestBuilder;
+  /** Optional callback for token refresh events */
+  private readonly onTokenRefresh?: TokenRefreshCallback;
+  /** Maximum number of retry attempts for failed requests */
+  private readonly maxRetries: number;
 
   constructor(
-    private readonly client: HttpClient,
-    private readonly logger: Logger,
     private readonly options: XmApiOptions,
-    private readonly maxRetries: number = 3,
-    private readonly onTokenRefresh?: (
-      accessToken: string,
-      refreshToken: string,
-    ) => void | Promise<void>,
-    tokenState?: TokenState,
   ) {
-    // If we have token state, store it
-    if (tokenState) {
-      this.tokenState = tokenState;
+    // Set up internal properties
+    this.client = options.httpClient ?? new DefaultHttpClient();
+    this.logger = options.logger ?? defaultLogger;
+    this.onTokenRefresh = options.onTokenRefresh;
+    this.maxRetries = options.maxRetries ?? 3;
+    // Create initial token state for OAuth if needed
+    if (isOAuthOptions(options)) {
+      this.tokenState = {
+        accessToken: options.accessToken,
+        refreshToken: options.refreshToken || '',
+        clientId: options.clientId,
+        // Set a default expiry 5 minutes from now - we'll get the real value on first refresh
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        scopes: [],
+      };
     }
-
     // Create request builder
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       ...options.defaultHeaders,
     };
-
     this.requestBuilder = new RequestBuilder(options.hostname, headers);
+  }
+
+  /**
+   * Handle newly acquired or refreshed OAuth tokens.
+   *
+   * This method processes token responses from any source and updates the internal state:
+   * - OAuth endpoint responses (password grant, authorization code grant)
+   * - Automatic token refresh during request retry
+   *
+   * The method will:
+   * 1. Update the internal token state with new token data
+   * 2. Calculate and set the token expiration time
+   * 3. Execute the onTokenRefresh callback if provided (with error handling)
+   *
+   * @param tokenResponse - The token response object from the xMatters API
+   * @param clientId - Optional client ID for OAuth2 operations (preserved from previous state if not provided)
+   */
+  async handleNewTokens(
+    tokenResponse: OAuth2TokenResponse,
+    clientId?: string,
+  ): Promise<void> {
+    // Update token state
+    this.tokenState = {
+      accessToken: tokenResponse.access_token,
+      refreshToken: tokenResponse.refresh_token,
+      clientId: clientId ?? this.tokenState?.clientId,
+      expiresAt: new Date(Date.now() + (tokenResponse.expires_in * 1000)).toISOString(),
+      scopes: tokenResponse.scope?.split(' ') ?? [],
+    };
+    // Execute callback if provided
+    if (this.onTokenRefresh) {
+      try {
+        await this.onTokenRefresh(tokenResponse.access_token, tokenResponse.refresh_token);
+      } catch (error) {
+        // Use proper logger instead of console
+        this.logger.warn(
+          'Error in onTokenRefresh callback, but continuing with refreshed token',
+          error,
+        );
+      }
+    }
   }
 
   private isTokenExpired(): boolean {
@@ -77,52 +131,11 @@ export class RequestHandler {
 
       const response = await this.client.send(refreshRequest);
 
-      if (response.status !== 200 || !response.body) {
+      if (response.status < 200 || response.status >= 300) {
         throw new XmApiError('Failed to refresh token', response);
       }
 
-      if (typeof response.body !== 'object' || !response.body) {
-        throw new XmApiError(
-          'Invalid token response format',
-          response,
-        );
-      }
-
-      const body = response.body as {
-        access_token?: string;
-        refresh_token?: string;
-        expires_in?: number;
-        scope?: string;
-      };
-
-      if (!body.access_token || !body.refresh_token) {
-        throw new XmApiError(
-          'Token response missing required fields',
-          response,
-        );
-      }
-
-      this.tokenState = {
-        ...this.tokenState, // Preserve clientId and other fields
-        accessToken: body.access_token,
-        refreshToken: body.refresh_token,
-        scopes: body.scope?.split(' ') ?? [],
-        expiresAt: new Date(Date.now() + ((body.expires_in ?? 3600) * 1000)).toISOString(),
-      };
-
-      if (this.onTokenRefresh) {
-        try {
-          await this.onTokenRefresh(
-            this.tokenState.accessToken,
-            this.tokenState.refreshToken,
-          );
-        } catch (error) {
-          this.logger.warn(
-            'Error in onTokenRefresh callback, but continuing with refreshed token',
-            error,
-          );
-        }
-      }
+      await this.handleNewTokens(response.body as OAuth2TokenResponse, this.tokenState?.clientId);
     } catch (error) {
       this.logger.error('Failed to refresh token:', error);
       throw error;
@@ -257,5 +270,20 @@ export class RequestHandler {
 
   delete<T>(options: DeleteOptions): Promise<HttpResponse<T>> {
     return this.send<T>({ ...options, method: 'DELETE' });
+  }
+
+  /**
+   * Get basic auth credentials from constructor options if available.
+   * This allows endpoints to access these credentials for OAuth token acquisition.
+   */
+  getBasicAuthCredentials(): BasicAuthCredentials | undefined {
+    if (isBasicAuthOptions(this.options)) {
+      return {
+        username: this.options.username,
+        password: this.options.password,
+        clientId: this.options.clientId,
+      };
+    }
+    return undefined;
   }
 }

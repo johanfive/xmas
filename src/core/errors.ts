@@ -30,8 +30,10 @@ export class XmApiError extends Error {
     },
     public override readonly cause?: unknown,
   ) {
-    // If response is provided, extract a better message from it
-    const finalMessage = response ? XmApiError.extractErrorMessage(response) : message;
+    // Use custom message if provided and meaningful, otherwise extract from response
+    const finalMessage = (message && message.trim())
+      ? message
+      : (response ? XmApiError.extractErrorMessage(response) : message);
     super(finalMessage);
     this.name = 'XmApiError';
 

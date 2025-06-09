@@ -27,7 +27,6 @@ import { RequestHandler } from '../../core/request-handler.ts';
 import type { HttpClient, HttpRequest } from '../../core/types/internal/http.ts';
 import type { Logger, XmApiOptions } from '../../core/types/internal/config.ts';
 import type { Group } from './types.ts';
-import type { TokenState } from '../../core/types/internal/oauth.ts';
 import { XmApiError } from '../../core/errors.ts';
 
 // Test helper to create mock setup
@@ -51,7 +50,6 @@ function createEndpointTestSetup(options: {
     clientId,
     maxRetries = 3,
     onTokenRefresh,
-    expiredToken = false,
   } = options;
 
   // Create silent mock logger
@@ -63,37 +61,32 @@ function createEndpointTestSetup(options: {
   };
 
   // Create auth options based on provided parameters
-  const mockOptions: XmApiOptions = accessToken
-    ? { hostname, accessToken, refreshToken, clientId }
-    : { hostname, username, password };
-
   const mockHttpClient: HttpClient = {
     send: () => Promise.resolve({ status: 200, headers: {}, body: {} }),
   };
 
-  // Create token state for OAuth options if needed
-  let tokenState: TokenState | undefined;
-  if (accessToken) {
-    const expiresAt = expiredToken
-      ? new Date(Date.now() - 1000).toISOString() // Already expired
-      : new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes from now
-    tokenState = {
+  const mockOptions: XmApiOptions = accessToken
+    ? {
+      hostname,
       accessToken,
-      refreshToken: refreshToken || '',
+      refreshToken,
       clientId,
-      expiresAt,
-      scopes: [],
+      onTokenRefresh,
+      maxRetries,
+      httpClient: mockHttpClient,
+      logger: mockLogger,
+    }
+    : {
+      hostname,
+      username,
+      password,
+      onTokenRefresh,
+      maxRetries,
+      httpClient: mockHttpClient,
+      logger: mockLogger,
     };
-  }
 
-  const requestHandler = new RequestHandler(
-    mockHttpClient,
-    mockLogger,
-    mockOptions,
-    maxRetries,
-    onTokenRefresh,
-    tokenState,
-  );
+  const requestHandler = new RequestHandler(mockOptions);
   const endpoint = new GroupsEndpoint(requestHandler);
 
   return { mockHttpClient, endpoint, mockLogger };
@@ -607,7 +600,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     try {
       const response = await endpoint.getGroups();
       expect(response.status).toBe(200);
-      expect(sendStub.calls.length).toBe(2); // token refresh, main request
+      expect(sendStub.calls.length).toBe(3); // initial request (401), token refresh, retry request
       expect(warnStub.calls.length).toBe(1);
       expect(warnStub.calls[0].args[0]).toBe(
         'Error in onTokenRefresh callback, but continuing with refreshed token',
@@ -659,7 +652,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         thrownError = error;
       }
       expect(thrownError).toBeInstanceOf(XmApiError);
-      expect(sendStub.calls.length).toBe(1); // failed token refresh only
+      expect(sendStub.calls.length).toBe(2); // initial request (401), failed token refresh
       expect(errorStub.calls.length).toBe(1);
       expect(errorStub.calls[0].args[0]).toBe('Failed to refresh token:');
       expect(errorStub.calls[0].args[1]).toBeInstanceOf(XmApiError);

@@ -15,7 +15,6 @@ import { FakeTime } from 'https://deno.land/std@0.224.0/testing/time.ts';
 import { RequestHandler } from './request-handler.ts';
 import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
 import type { Logger, XmApiOptions } from './types/internal/config.ts';
-import type { TokenState } from './types/internal/oauth.ts';
 import { XmApiError } from './errors.ts';
 
 /**
@@ -76,32 +75,21 @@ function createRequestHandlerTestSetup(options: {
   };
 
   // Create auth options based on provided parameters
-  const mockOptions: XmApiOptions = accessToken
-    ? { hostname, accessToken, refreshToken, clientId }
-    : { hostname, username, password };
-
   const mockHttpClient = new MockHttpClient(responses);
 
-  // Create token state for OAuth options if needed
-  let tokenState: TokenState | undefined;
-  if (accessToken) {
-    tokenState = {
+  const mockOptions: XmApiOptions = accessToken
+    ? {
+      hostname,
       accessToken,
-      refreshToken: refreshToken || '',
+      refreshToken,
       clientId,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes from now
-      scopes: [],
-    };
-  }
+      maxRetries,
+      httpClient: mockHttpClient,
+      logger: mockLogger,
+    }
+    : { hostname, username, password, maxRetries, httpClient: mockHttpClient, logger: mockLogger };
 
-  const requestHandler = new RequestHandler(
-    mockHttpClient,
-    mockLogger,
-    mockOptions,
-    maxRetries,
-    undefined, // onTokenRefresh callback
-    tokenState,
-  );
+  const requestHandler = new RequestHandler(mockOptions);
 
   return { mockHttpClient, requestHandler, mockLogger };
 }
@@ -277,12 +265,14 @@ Deno.test('RequestHandler', async (t) => {
       send: () => Promise.reject(new Error('Network error')),
     };
 
-    const networkRequestHandler = new RequestHandler(
-      mockHttpClient,
-      { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
-      { hostname: 'https://example.xmatters.com', username: 'test', password: 'test' },
-      3,
-    );
+    const networkRequestHandler = new RequestHandler({
+      hostname: 'https://example.xmatters.com',
+      username: 'test',
+      password: 'test',
+      maxRetries: 3,
+      httpClient: mockHttpClient,
+      logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
+    });
 
     try {
       let thrownError: unknown;
