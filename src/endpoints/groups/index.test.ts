@@ -65,8 +65,10 @@ function createEndpointTestSetup(options: {
     send: () => Promise.resolve({ status: 200, headers: {}, body: {} }),
   };
 
-  const mockOptions: XmApiOptions = accessToken
-    ? {
+  let mockOptions: XmApiOptions;
+  if (accessToken && refreshToken && clientId) {
+    // OAuth configuration - all three are required
+    mockOptions = {
       hostname,
       accessToken,
       refreshToken,
@@ -75,8 +77,10 @@ function createEndpointTestSetup(options: {
       maxRetries,
       httpClient: mockHttpClient,
       logger: mockLogger,
-    }
-    : {
+    };
+  } else {
+    // Basic auth configuration
+    mockOptions = {
       hostname,
       username,
       password,
@@ -85,6 +89,7 @@ function createEndpointTestSetup(options: {
       httpClient: mockHttpClient,
       logger: mockLogger,
     };
+  }
 
   const requestHandler = new RequestHandler(mockOptions);
   const endpoint = new GroupsEndpoint(requestHandler);
@@ -274,6 +279,8 @@ Deno.test('GroupsEndpoint', async (t) => {
   await t.step('OAuth authentication - sends correct Authorization header', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup({
       accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token',
+      clientId: 'test-client-id',
       hostname: 'https://oauth.xmatters.com',
     });
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));

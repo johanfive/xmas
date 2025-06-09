@@ -1,4 +1,5 @@
 import { HttpRequest } from './types/internal/http.ts';
+import { XmApiError } from './errors.ts';
 
 /**
  * Request options for building HTTP requests.
@@ -33,7 +34,7 @@ export class RequestBuilder {
     let url: URL;
 
     if (options.fullUrl && options.path) {
-      throw new Error(
+      throw new XmApiError(
         'Cannot specify both fullUrl and path. Use fullUrl for external endpoints, path for xMatters API endpoints.',
       );
     }
@@ -42,11 +43,11 @@ export class RequestBuilder {
       url = new URL(options.fullUrl);
     } else if (options.path) {
       if (!options.path.startsWith('/')) {
-        throw new Error('Path must start with a forward slash, e.g. "/people"');
+        throw new XmApiError('Path must start with a forward slash, e.g. "/people"');
       }
       url = new URL(`${this.apiVersionPath}${options.path}`, this.baseUrl);
     } else {
-      throw new Error('Either path or fullUrl must be provided');
+      throw new XmApiError('Either path or fullUrl must be provided');
     }
 
     // Add query parameters if present in the options

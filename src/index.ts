@@ -25,8 +25,9 @@ import { OAuthEndpoint } from './endpoints/oauth/index.ts';
  * ```typescript
  * const xm = new XmApi({
  *   hostname: 'https://example.xmatters.com',
- *   accessToken: 'your-token',
+ *   accessToken: 'your-access-token',
  *   refreshToken: 'your-refresh-token',
+ *   clientId: 'your-client-id',
  *   // Optional configurations
  *   httpClient: myCustomHttpClient,
  *   logger: myCustomLogger,

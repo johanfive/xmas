@@ -12,6 +12,7 @@
 
 import { expect } from 'https://deno.land/std@0.224.0/expect/mod.ts';
 import { FakeTime } from 'https://deno.land/std@0.224.0/testing/time.ts';
+import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts';
 import { RequestHandler } from './request-handler.ts';
 import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
 import type { Logger, XmApiOptions } from './types/internal/config.ts';
@@ -77,8 +78,10 @@ function createRequestHandlerTestSetup(options: {
   // Create auth options based on provided parameters
   const mockHttpClient = new MockHttpClient(responses);
 
-  const mockOptions: XmApiOptions = accessToken
-    ? {
+  let mockOptions: XmApiOptions;
+  if (accessToken && refreshToken && clientId) {
+    // OAuth configuration - all three are required
+    mockOptions = {
       hostname,
       accessToken,
       refreshToken,
@@ -86,8 +89,18 @@ function createRequestHandlerTestSetup(options: {
       maxRetries,
       httpClient: mockHttpClient,
       logger: mockLogger,
-    }
-    : { hostname, username, password, maxRetries, httpClient: mockHttpClient, logger: mockLogger };
+    };
+  } else {
+    // Basic auth configuration
+    mockOptions = {
+      hostname,
+      username,
+      password,
+      maxRetries,
+      httpClient: mockHttpClient,
+      logger: mockLogger,
+    };
+  }
 
   const requestHandler = new RequestHandler(mockOptions);
 
@@ -316,7 +329,7 @@ Deno.test('RequestHandler', async (t) => {
     const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
       accessToken: 'test-access-token',
       refreshToken: 'test-refresh-token',
-      clientId: 'client-id',
+      clientId: 'test-client-id',
     });
 
     try {
@@ -334,7 +347,7 @@ Deno.test('RequestHandler', async (t) => {
     const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
       accessToken: 'old-token',
       refreshToken: 'refresh-token',
-      clientId: 'client-id',
+      clientId: 'test-client-id',
       responses: [mockUnauthorizedResponse, mockTokenRefreshResponse, mockSuccessResponse],
     });
 
@@ -353,7 +366,7 @@ Deno.test('RequestHandler', async (t) => {
       const params = new URLSearchParams(refreshRequest.body as string);
       expect(params.get('grant_type')).toBe('refresh_token');
       expect(params.get('refresh_token')).toBe('refresh-token');
-      expect(params.get('client_id')).toBe('client-id');
+      expect(params.get('client_id')).toBe('test-client-id');
 
       // Verify retried request uses new token
       const retriedRequest = mockHttpClient.requests[2];
@@ -374,6 +387,238 @@ Deno.test('RequestHandler', async (t) => {
       expect(sentRequest.headers?.Authorization).toBeUndefined();
     } finally {
       mockHttpClient.reset();
+    }
+  });
+
+  await t.step('logs debug message when retrying requests', async () => {
+    const fakeTime = new FakeTime();
+    try {
+      const { mockHttpClient, requestHandler, mockLogger } = createRequestHandlerTestSetup({
+        responses: [mockRateLimitResponse, mockSuccessResponse],
+      });
+
+      // Stub the debug method to capture calls
+      const debugStub = stub(mockLogger, 'debug', () => {});
+
+      try {
+        const requestPromise = requestHandler.get({ path: '/test' });
+
+        // Allow the first request to complete and set up the timer
+        await fakeTime.nextAsync();
+        // Now advance time to trigger the retry
+        await fakeTime.nextAsync();
+
+        const response = await requestPromise;
+
+        expect(response.status).toBe(200);
+        expect(mockHttpClient.requests.length).toBe(2);
+
+        // Verify debug logger was called with correct retry message
+        expect(debugStub.calls.length).toBe(1);
+        expect(debugStub.calls[0].args[0]).toBe(
+          'Request failed with status 429, retrying in 1000ms (attempt 1/3)',
+        );
+      } finally {
+        debugStub.restore();
+      }
+    } finally {
+      fakeTime.restore();
+    }
+  });
+
+  await t.step('logs error when token refresh fails', async () => {
+    const { mockHttpClient, requestHandler, mockLogger } = createRequestHandlerTestSetup({
+      accessToken: 'expired-token',
+      refreshToken: 'invalid-refresh-token',
+      clientId: 'test-client-id',
+      responses: [
+        mockUnauthorizedResponse,
+        { status: 400, headers: {}, body: { error: 'invalid_grant' } },
+      ],
+    });
+
+    // Stub the error method to capture calls
+    const errorStub = stub(mockLogger, 'error', () => {});
+
+    try {
+      let thrownError: unknown;
+      try {
+        await requestHandler.get({ path: '/test' });
+      } catch (error) {
+        thrownError = error;
+      }
+
+      expect(thrownError).toBeInstanceOf(XmApiError);
+      expect(mockHttpClient.requests.length).toBe(2); // Initial 401 + failed token refresh
+
+      // Verify error logger was called
+      expect(errorStub.calls.length).toBe(1);
+      expect(errorStub.calls[0].args[0]).toBe('Failed to refresh token:');
+      expect(errorStub.calls[0].args[1]).toBeInstanceOf(XmApiError);
+    } finally {
+      errorStub.restore();
+      mockHttpClient.reset();
+    }
+  });
+
+  await t.step('logs warning when onTokenRefresh callback throws error', async () => {
+    const throwingCallback = () => {
+      throw new Error('Callback error');
+    };
+
+    const { mockHttpClient, mockLogger } = createRequestHandlerTestSetup({
+      accessToken: 'expired-token',
+      refreshToken: 'valid-refresh-token',
+      clientId: 'test-client-id',
+      responses: [mockUnauthorizedResponse, mockTokenRefreshResponse, mockSuccessResponse],
+    });
+
+    // Override the options to include the throwing callback
+    const requestHandlerWithCallback = new RequestHandler({
+      hostname: 'https://example.xmatters.com',
+      accessToken: 'expired-token',
+      refreshToken: 'valid-refresh-token',
+      clientId: 'test-client-id',
+      maxRetries: 3,
+      httpClient: mockHttpClient,
+      logger: mockLogger,
+      onTokenRefresh: throwingCallback,
+    });
+
+    // Stub the warn method to capture calls
+    const warnStub = stub(mockLogger, 'warn', () => {});
+
+    try {
+      const response = await requestHandlerWithCallback.get({ path: '/test' });
+
+      expect(response.status).toBe(200);
+      expect(mockHttpClient.requests.length).toBe(3); // Initial 401 + token refresh + retry
+
+      // Verify warning logger was called
+      expect(warnStub.calls.length).toBe(1);
+      expect(warnStub.calls[0].args[0]).toBe(
+        'Error in onTokenRefresh callback, but continuing with refreshed token',
+      );
+      expect(warnStub.calls[0].args[1]).toBeInstanceOf(Error);
+      expect((warnStub.calls[0].args[1] as Error).message).toBe('Callback error');
+    } finally {
+      warnStub.restore();
+      mockHttpClient.reset();
+    }
+  });
+
+  await t.step('throws error when token refresh returns non-200 status', async () => {
+    const { mockHttpClient, requestHandler, mockLogger } = createRequestHandlerTestSetup({
+      accessToken: 'expired-token',
+      refreshToken: 'invalid-refresh-token',
+      clientId: 'test-client-id',
+      responses: [
+        mockUnauthorizedResponse,
+        { status: 401, headers: {}, body: { error: 'invalid_client' } },
+      ],
+    });
+
+    // Stub the error method to capture calls
+    const errorStub = stub(mockLogger, 'error', () => {});
+
+    try {
+      let thrownError: unknown;
+      try {
+        await requestHandler.get({ path: '/test' });
+      } catch (error) {
+        thrownError = error;
+      }
+
+      expect(thrownError).toBeInstanceOf(XmApiError);
+      const xmError = thrownError as XmApiError;
+      expect(xmError.message).toBe('Failed to refresh token');
+      expect(xmError.response?.status).toBe(401);
+
+      // Verify error logger was called
+      expect(errorStub.calls.length).toBe(1);
+      expect(errorStub.calls[0].args[0]).toBe('Failed to refresh token:');
+      expect(errorStub.calls[0].args[1]).toBeInstanceOf(XmApiError);
+    } finally {
+      errorStub.restore();
+      mockHttpClient.reset();
+    }
+  });
+
+  await t.step('logs debug message with exponential backoff delay on server errors', async () => {
+    const fakeTime = new FakeTime();
+    try {
+      const { mockHttpClient, requestHandler, mockLogger } = createRequestHandlerTestSetup({
+        responses: [mockServerErrorResponse, mockSuccessResponse],
+      });
+
+      // Stub the debug method to capture calls
+      const debugStub = stub(mockLogger, 'debug', () => {});
+
+      try {
+        const requestPromise = requestHandler.get({ path: '/test' });
+
+        // Allow the first request to complete and set up the timer
+        await fakeTime.nextAsync();
+        // Now advance time to trigger the retry
+        await fakeTime.nextAsync();
+
+        const response = await requestPromise;
+
+        expect(response.status).toBe(200);
+        expect(mockHttpClient.requests.length).toBe(2);
+
+        // Verify debug logger was called with exponential backoff message
+        expect(debugStub.calls.length).toBe(1);
+        expect(debugStub.calls[0].args[0]).toBe(
+          'Request failed with status 503, retrying in 1000ms (attempt 1/3)',
+        );
+      } finally {
+        debugStub.restore();
+      }
+    } finally {
+      fakeTime.restore();
+    }
+  });
+
+  await t.step('respects Retry-After header and logs correct delay', async () => {
+    const fakeTime = new FakeTime();
+    try {
+      const customRateLimitResponse: HttpResponse = {
+        status: 429,
+        headers: { 'retry-after': '5' }, // 5 seconds
+        body: { message: 'Too many requests' },
+      };
+
+      const { mockHttpClient, requestHandler, mockLogger } = createRequestHandlerTestSetup({
+        responses: [customRateLimitResponse, mockSuccessResponse],
+      });
+
+      // Stub the debug method to capture calls
+      const debugStub = stub(mockLogger, 'debug', () => {});
+
+      try {
+        const requestPromise = requestHandler.get({ path: '/test' });
+
+        // Allow the first request to complete and set up the timer
+        await fakeTime.nextAsync();
+        // Now advance time to trigger the retry
+        await fakeTime.nextAsync();
+
+        const response = await requestPromise;
+
+        expect(response.status).toBe(200);
+        expect(mockHttpClient.requests.length).toBe(2);
+
+        // Verify debug logger was called with Retry-After header value
+        expect(debugStub.calls.length).toBe(1);
+        expect(debugStub.calls[0].args[0]).toBe(
+          'Request failed with status 429, retrying in 5000ms (attempt 1/3)',
+        );
+      } finally {
+        debugStub.restore();
+      }
+    } finally {
+      fakeTime.restore();
     }
   });
 });

@@ -39,7 +39,7 @@ export class RequestHandler {
     if (isOAuthOptions(options)) {
       this.tokenState = {
         accessToken: options.accessToken,
-        refreshToken: options.refreshToken || '',
+        refreshToken: options.refreshToken,
         clientId: options.clientId,
         // Set a default expiry 5 minutes from now - we'll get the real value on first refresh
         expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
@@ -68,17 +68,23 @@ export class RequestHandler {
    * 3. Execute the onTokenRefresh callback if provided (with error handling)
    *
    * @param tokenResponse - The token response object from the xMatters API
-   * @param clientId - Optional client ID for OAuth2 operations (preserved from previous state if not provided)
+   * @param clientId - Optional client ID for OAuth2 operations (preserved from current state if not provided)
    */
   async handleNewTokens(
     tokenResponse: OAuth2TokenResponse,
     clientId?: string,
   ): Promise<void> {
+    // Use provided clientId or fall back to current state's clientId
+    const finalClientId = clientId ?? this.tokenState?.clientId;
+    if (!finalClientId) {
+      throw new XmApiError('Client ID is required for token handling');
+    }
+
     // Update token state
     this.tokenState = {
       accessToken: tokenResponse.access_token,
       refreshToken: tokenResponse.refresh_token,
-      clientId: clientId ?? this.tokenState?.clientId,
+      clientId: finalClientId,
       expiresAt: new Date(Date.now() + (tokenResponse.expires_in * 1000)).toISOString(),
       scopes: tokenResponse.scope?.split(' ') ?? [],
     };
@@ -105,19 +111,15 @@ export class RequestHandler {
 
   private async refreshToken(): Promise<void> {
     try {
-      if (!this.tokenState?.refreshToken) {
-        throw new XmApiError('No refresh token available for token refresh');
+      if (!this.tokenState) {
+        throw new XmApiError('No token state available for token refresh');
       }
 
       const params = new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: this.tokenState.refreshToken,
+        client_id: this.tokenState.clientId,
       });
-
-      // Add client ID if available (required for some OAuth2 servers)
-      if (this.tokenState.clientId) {
-        params.append('client_id', this.tokenState.clientId);
-      }
 
       const refreshRequest = this.requestBuilder.build({
         method: 'POST',

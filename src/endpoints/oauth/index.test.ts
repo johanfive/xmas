@@ -37,16 +37,6 @@ class MockHttpClient implements HttpClient {
     this.callIndex++;
     return Promise.resolve(response as HttpResponse<T>);
   }
-
-  reset() {
-    this.requests = [];
-    this.callIndex = 0;
-  }
-
-  setResponses(responses: HttpResponse[]) {
-    this.responses = responses;
-    this.callIndex = 0;
-  }
 }
 
 /**
@@ -85,7 +75,8 @@ function createTestRequestHandler(options: {
 
   // Create auth options based on provided parameters
   let mockOptions: XmApiOptions;
-  if (accessToken) {
+  if (accessToken && refreshToken && clientId) {
+    // OAuth configuration - all three are required
     mockOptions = {
       hostname,
       accessToken,
@@ -173,14 +164,14 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - successful token acquisiti
 
 Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when no constructor credentials', async () => {
   const { requestHandler, mockHttpClient: _ } = createTestRequestHandler({
-    accessToken: 'existing-token', // OAuth mode, no basic auth
+    // No credentials provided - this will default to basic auth mode but with missing fields
     responses: [],
   });
 
   const oauthEndpoint = new OAuthEndpoint(requestHandler);
 
   await expect(oauthEndpoint.getTokensByCredentials()).rejects.toThrow(
-    'XmApi must be initialized with basic auth credentials (username, password, clientId) to acquire OAuth tokens.',
+    'clientId is required for OAuth token acquisition. Provide it in the XmApi constructor.',
   );
 
   // Verify no HTTP request was made

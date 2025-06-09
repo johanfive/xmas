@@ -1,5 +1,6 @@
 import { expect } from 'https://deno.land/std@0.224.0/expect/mod.ts';
 import { RequestBuilder, RequestBuildOptions } from './request-builder.ts';
+import { XmApiError } from './errors.ts';
 
 // Test helper to create RequestBuilder with standard configuration
 function createRequestBuilderTestSetup(options: {
@@ -181,8 +182,8 @@ Deno.test('RequestBuilder', async (t) => {
     } catch (error) {
       thrownError = error;
     }
-    expect(thrownError).toBeInstanceOf(Error);
-    const error = thrownError as Error;
+    expect(thrownError).toBeInstanceOf(XmApiError);
+    const error = thrownError as XmApiError;
     expect(error.message).toBe('Path must start with a forward slash, e.g. "/people"');
   });
 
@@ -197,8 +198,8 @@ Deno.test('RequestBuilder', async (t) => {
     } catch (error) {
       thrownError = error;
     }
-    expect(thrownError).toBeInstanceOf(Error);
-    const error = thrownError as Error;
+    expect(thrownError).toBeInstanceOf(XmApiError);
+    const error = thrownError as XmApiError;
     expect(error.message).toBe(
       'Cannot specify both fullUrl and path. Use fullUrl for external endpoints, path for xMatters API endpoints.',
     );
@@ -212,8 +213,8 @@ Deno.test('RequestBuilder', async (t) => {
     } catch (error) {
       thrownError = error;
     }
-    expect(thrownError).toBeInstanceOf(Error);
-    const error = thrownError as Error;
+    expect(thrownError).toBeInstanceOf(XmApiError);
+    const error = thrownError as XmApiError;
     expect(error.message).toBe('Either path or fullUrl must be provided');
   });
 

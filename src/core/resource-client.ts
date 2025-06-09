@@ -4,6 +4,7 @@ import type {
   RequestWithBodyOptions,
 } from './types/internal/methods.ts';
 import { RequestHandler } from './request-handler.ts';
+import { XmApiError } from './errors.ts';
 
 /**
  * A wrapper around RequestHandler that automatically prepends a base path to all requests.
@@ -16,7 +17,7 @@ export class ResourceClient {
     private readonly basePath: string,
   ) {
     if (!basePath.startsWith('/')) {
-      throw new Error('Base path must start with a /');
+      throw new XmApiError('Base path must start with a /');
     }
   }
 

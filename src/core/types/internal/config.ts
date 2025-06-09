@@ -58,11 +58,12 @@ export type BasicAuthCredentials = Pick<
 
 /**
  * Configuration options for OAuth authentication with existing tokens.
+ * All three fields are required for proper OAuth functionality.
  */
 export interface XmApiOAuthOptions extends XmApiBaseOptions {
   accessToken: string;
-  refreshToken?: string;
-  clientId?: string;
+  refreshToken: string;
+  clientId: string;
 }
 
 /**

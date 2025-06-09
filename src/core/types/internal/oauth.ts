@@ -27,8 +27,6 @@ export interface TokenState extends TokenData {
   expiresAt: string;
   /** Scopes granted to the token */
   scopes: string[];
-  /** Optional client ID used for token refresh */
-  clientId?: string;
 }
 
 /**
@@ -39,6 +37,6 @@ export interface TokenData {
   accessToken: string;
   /** Token to use for getting a new access token */
   refreshToken: string;
-  /** Optional client ID used for OAuth2 server authentication */
-  clientId?: string;
+  /** Client ID used for OAuth2 server authentication */
+  clientId: string;
 }
