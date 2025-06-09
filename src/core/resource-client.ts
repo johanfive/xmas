@@ -1,4 +1,3 @@
-import type { HttpRequest } from './types/internal/http.ts';
 import type {
   DeleteOptions,
   GetOptions,
