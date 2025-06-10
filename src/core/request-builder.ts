@@ -35,6 +35,9 @@ export interface RequestBuildOptions {
 
   /** Used internally for retry logic */
   retryAttempt?: number;
+
+  /** Whether to skip adding authentication headers to this request */
+  skipAuth?: boolean;
 }
 
 export class RequestBuilder {

@@ -1,4 +1,4 @@
-import { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
+import { HttpClient, HttpResponse } from './types/internal/http.ts';
 import {
   BasicAuthCredentials,
   isBasicAuthOptions,
@@ -10,7 +10,7 @@ import {
 import { DeleteOptions, GetOptions, RequestWithBodyOptions } from './types/internal/methods.ts';
 import { XmApiError } from './errors.ts';
 import { OAuth2TokenResponse, TokenState } from './types/internal/oauth.ts';
-import { RequestBuilder } from './request-builder.ts';
+import { RequestBuilder, RequestBuildOptions } from './request-builder.ts';
 import { DefaultHttpClient, defaultLogger } from './defaults/index.ts';
 
 export class RequestHandler {
@@ -168,16 +168,7 @@ export class RequestHandler {
   }
 
   async send<T>(
-    request: {
-      path?: string;
-      fullUrl?: string;
-      method?: HttpRequest['method'];
-      headers?: Record<string, string>;
-      query?: Record<string, unknown>;
-      body?: unknown;
-      retryAttempt?: number;
-      skipAuth?: boolean;
-    },
+    request: RequestBuildOptions,
   ): Promise<HttpResponse<T>> {
     // Check if token refresh is needed before making the request
     if (this.tokenState && this.isTokenExpired()) {
