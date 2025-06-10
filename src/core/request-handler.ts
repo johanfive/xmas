@@ -189,6 +189,7 @@ export class RequestHandler {
     }
 
     try {
+      this.logger.debug(`DEBUG: Sending request: ${fullRequest.method} ${fullRequest.url}`);
       const response = await this.client.send(fullRequest);
 
       if (response.status >= 400) {

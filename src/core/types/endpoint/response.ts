@@ -36,7 +36,7 @@ export interface PaginatedResponse<T> {
  * ```typescript
  * // Instead of: Promise<PaginatedResponse<Group>>
  * // Use: Promise<PaginatedHttpResponse<Group>>
- * getGroups(): Promise<PaginatedHttpResponse<Group>> {
+ * get(): Promise<PaginatedHttpResponse<Group>> {
  *   return this.http.get<PaginatedResponse<Group>>({ path: '/groups' });
  * }
  * ```

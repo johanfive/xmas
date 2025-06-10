@@ -10,28 +10,6 @@ import { GetGroupsParams, GetGroupsResponse, Group } from './types.ts';
 /**
  * Provides access to the groups endpoints of the xMatters API.
  * Use this class to manage groups, including listing, creating, updating, and deleting groups.
- *
- * @example
- * ```typescript
- * const xm = new XmApi({
- *   baseUrl: 'https://example.xmatters.com',
- *   accessToken: 'your-token'
- * });
- *
- * // Get all groups
- * const { body: groups } = await xm.groups.getGroups();
- *
- * // Get groups with pagination
- * const { body: pagedGroups } = await xm.groups.getGroups({
- *   limit: 10,
- *   offset: 0
- * });
- *
- * // Search for groups
- * const { body: searchedGroups } = await xm.groups.getGroups({
- *   search: 'oncall'
- * });
- * ```
  */
 export class GroupsEndpoint {
   private readonly http: ResourceClient;
@@ -48,7 +26,7 @@ export class GroupsEndpoint {
    * @returns The HTTP response containing a paginated list of groups
    * @throws {XmApiError} If the request fails
    */
-  getGroups(params?: GetGroupsParams): Promise<PaginatedHttpResponse<Group>> {
+  get(params?: GetGroupsParams): Promise<PaginatedHttpResponse<Group>> {
     return this.http.get<GetGroupsResponse>({ query: params });
   }
 

@@ -143,11 +143,11 @@ const mockEmptyResponse = {
 };
 
 Deno.test('GroupsEndpoint', async (t) => {
-  await t.step('getGroups() - sends correct HTTP request with no params', async () => {
+  await t.step('get() - sends correct HTTP request with no params', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
     try {
-      const response = await endpoint.getGroups();
+      const response = await endpoint.get();
       // Verify HTTP client was called exactly once
       expect(sendStub.calls.length).toBe(1);
       // Verify the request details
@@ -165,11 +165,11 @@ Deno.test('GroupsEndpoint', async (t) => {
     }
   });
 
-  await t.step('getGroups() - sends correct HTTP request with pagination params', async () => {
+  await t.step('get() - sends correct HTTP request with pagination params', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
     try {
-      const response = await endpoint.getGroups({ limit: 10, offset: 20 });
+      const response = await endpoint.get({ limit: 10, offset: 20 });
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
       expect(sentRequest.url).toBe(
@@ -185,11 +185,11 @@ Deno.test('GroupsEndpoint', async (t) => {
     }
   });
 
-  await t.step('getGroups() - sends correct HTTP request with search params', async () => {
+  await t.step('get() - sends correct HTTP request with search params', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
     try {
-      const response = await endpoint.getGroups({ search: 'oncall', limit: 5 });
+      const response = await endpoint.get({ search: 'oncall', limit: 5 });
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
       expect(sentRequest.url).toBe(
@@ -273,7 +273,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     });
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
     try {
-      const response = await endpoint.getGroups();
+      const response = await endpoint.get();
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
@@ -320,7 +320,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     try {
       let thrownError: unknown;
       try {
-        await endpoint.getGroups();
+        await endpoint.get();
       } catch (error) {
         thrownError = error;
       }
@@ -339,7 +339,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     });
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
     try {
-      const response = await endpoint.getGroups();
+      const response = await endpoint.get();
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
@@ -361,7 +361,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     });
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
     try {
-      const response = await endpoint.getGroups();
+      const response = await endpoint.get();
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
@@ -411,7 +411,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     }
   });
 
-  await t.step('getGroups() with all possible parameters', async () => {
+  await t.step('get() with all possible parameters', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
     const params = {
@@ -421,7 +421,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       // Add other params that might exist in GetGroupsParams
     };
     try {
-      const response = await endpoint.getGroups(params);
+      const response = await endpoint.get(params);
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
@@ -463,7 +463,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       try {
         // Start the async request but DON'T await it yet
         // This begins the async chain but allows us to control timing with FakeTime
-        const requestPromise = endpoint.getGroups();
+        const requestPromise = endpoint.get();
 
         // Allow the first request to complete and set up the timer
         // This advances fake time to let the setTimeout callback fire
@@ -530,7 +530,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       try {
         // Start the async request but DON'T await it yet
         // This begins the async chain but allows us to control timing with FakeTime
-        const requestPromise = endpoint.getGroups();
+        const requestPromise = endpoint.get();
 
         // Allow the first request to complete and set up the timer
         // This advances fake time to let the setTimeout callback fire
@@ -613,7 +613,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     });
     const warnStub = stub(mockLogger, 'warn', () => {});
     try {
-      const response = await endpoint.getGroups();
+      const response = await endpoint.get();
       expect(response.status).toBe(200);
       expect(sendStub.calls.length).toBe(3); // initial request (401), token refresh, retry request
       expect(warnStub.calls.length).toBe(1);
@@ -662,7 +662,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     try {
       let thrownError: unknown;
       try {
-        await endpoint.getGroups();
+        await endpoint.get();
       } catch (error) {
         thrownError = error;
       }
@@ -690,7 +690,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     try {
       let thrownError: unknown;
       try {
-        await endpoint.getGroups();
+        await endpoint.get();
       } catch (error) {
         thrownError = error;
       }

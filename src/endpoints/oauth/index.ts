@@ -99,7 +99,7 @@ export class OAuthEndpoint {
    * });
    *
    * // Now all subsequent API calls use OAuth
-   * const groups = await xm.groups.getGroups();
+   * const groups = await xm.groups.get();
    * ```
    */
   async getTokensByAuthCode(params: TokenByAuthCodeParams): Promise<HttpResponse<TokenResponse>> {

@@ -31,14 +31,10 @@ export interface RetryConfig {
 2. Update RequestHandler constructor to accept this config:
 
 ```typescript
-constructor(
-  client: HttpClient,
-  logger: Logger,
-  requestBuilder: RequestBuilder,
+constructor({
+  ...options,
   retryConfig?: RetryConfig,
-  onTokenRefresh?: (accessToken: string, refreshToken: string) => void | Promise<void>,
-  tokenData?: TokenData,
-)
+})
 ```
 
 3. Implement custom retry logic in send() method using these options

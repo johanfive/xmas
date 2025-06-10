@@ -42,16 +42,13 @@ import { OAuthEndpoint } from './endpoints/oauth/index.ts';
 export class XmApi {
   /** HTTP handler that manages all API requests */
   private readonly http: RequestHandler;
-
   /** Access groups-related endpoints */
   public readonly groups: GroupsEndpoint;
-
   /** Access OAuth-related endpoints for token acquisition */
   public readonly oauth: OAuthEndpoint;
 
-  constructor(private readonly options: XmApiOptions) {
+  constructor(options: XmApiOptions) {
     this.http = new RequestHandler(options);
-
     // Initialize endpoints
     this.groups = new GroupsEndpoint(this.http);
     this.oauth = new OAuthEndpoint(this.http);
