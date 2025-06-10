@@ -1,5 +1,5 @@
 import { XmApi } from '../src/index.ts';
-import config from './credentials.ts';
+import config from './config.ts';
 
 const xm = new XmApi(config.basicAuth);
 
@@ -18,7 +18,7 @@ xm.groups
     body.data.forEach((group) => {
       console.log('Group ID: ', group.id);
       console.log('Group Name: ', group.targetName);
-      console.log('Group Description: ', group.description);
+      group.description && console.log('Group Description: ', group.description);
       console.log('-------------------------');
     });
   })
@@ -29,4 +29,8 @@ xm.groups
       console.log('Response Headers:', error.response.headers);
       console.log('Response Body:', error.response.body);
     }
+    console.log('\n\n🚨 Troubleshooting checklist:');
+    console.log('1. Is the .env file configured correctly?');
+    console.log('2. Are the credentials correct?');
+    console.log('3. Is the API version compatible?');
   });

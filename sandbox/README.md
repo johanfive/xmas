@@ -13,6 +13,8 @@ Use to `confirm` the `shapes` of the **requests** xmApi expects and the **repons
 
 ## Usage
 
+**From the root directory:**
+
 ```sh
-deno run --allow-net --allow-read --allow-env index.ts
+deno task sandox
 ```

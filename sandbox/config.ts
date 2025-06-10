@@ -1,13 +1,11 @@
-import { loadEnvFile } from './loadEnv.ts';
-
-await loadEnvFile();
-
 const {
   HOSTNAME,
   USERNAME,
   PASSWORD,
   CLIENT_ID,
 } = Deno.env.toObject();
+
+// Various configuration options to initiate the SDK with
 
 const basicAuth = {
   hostname: HOSTNAME,

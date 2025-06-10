@@ -4,7 +4,8 @@
   },
   "tasks": {
     "test": "DENO_TLS_CA_STORE=system deno test",
-    "cache": "DENO_TLS_CA_STORE=system deno cache --reload src/**/*.ts"
+    "cache": "DENO_TLS_CA_STORE=system deno cache --reload src/**/*.ts",
+    "sandbox": "DENO_TLS_CA_STORE=system deno run --allow-read --allow-net --env-file=sandbox/.env --allow-env sandbox/index.ts"
   },
   "fmt": {
     "singleQuote": true,
