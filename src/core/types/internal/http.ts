@@ -28,7 +28,7 @@ export interface HttpRequest {
   url: string;
   /** Headers to send with the request (includes auth, content-type, etc.) */
   headers?: Record<string, string>;
-  /** Optional request body (already serialized if needed) */
+  /** Optional request body (injected HTTP client should handle serialization) */
   body?: unknown;
   /** Current retry attempt number (for logging/debugging by HTTP clients) */
   retryAttempt?: number;

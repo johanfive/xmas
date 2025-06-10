@@ -6,7 +6,7 @@
 /**
  * Base interface for all HTTP method options
  */
-export interface HttpMethodOptions {
+interface HttpMethodBaseOptions {
   /** The path portion of the URL, relative to the API version path */
   path: string;
   /** Optional headers to send with the request */
@@ -16,7 +16,7 @@ export interface HttpMethodOptions {
 /**
  * Options for GET requests
  */
-export interface GetOptions extends HttpMethodOptions {
+export interface GetOptions extends HttpMethodBaseOptions {
   /** Optional query parameters */
   query?: Record<string, unknown>;
 }
@@ -24,7 +24,7 @@ export interface GetOptions extends HttpMethodOptions {
 /**
  * Options for POST, PUT, and PATCH requests
  */
-export interface RequestWithBodyOptions extends HttpMethodOptions {
+export interface RequestWithBodyOptions extends HttpMethodBaseOptions {
   /** The request body */
   body?: unknown;
 }
@@ -32,4 +32,4 @@ export interface RequestWithBodyOptions extends HttpMethodOptions {
 /**
  * Options for DELETE requests
  */
-export type DeleteOptions = HttpMethodOptions;
+export type DeleteOptions = HttpMethodBaseOptions;
