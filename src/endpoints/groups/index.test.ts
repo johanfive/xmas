@@ -483,12 +483,27 @@ Deno.test('GroupsEndpoint', async (t) => {
       });
       const debugStub = stub(mockLogger, 'debug', () => {});
       try {
-        // Start the request
+        // Start the async request but DON'T await it yet
+        // This begins the async chain but allows us to control timing with FakeTime
         const requestPromise = endpoint.getGroups();
+
         // Allow the first request to complete and set up the timer
+        // This advances fake time to let the setTimeout callback fire
         await fakeTime.nextAsync();
-        // Now advance time to trigger the retry
+
+        // Verify the first request completed and retry was triggered
+        // At this point: initial request failed → setTimeout set → timeout fired → retry executed
+        expect(sendStub.calls.length).toBe(2);
+        expect(sendStub.calls[0].args[0].method).toBe('GET');
+        expect(sendStub.calls[0].args[0].path).toBe('/groups');
+        expect(sendStub.calls[1].args[0].method).toBe('GET');
+        expect(sendStub.calls[1].args[0].path).toBe('/groups');
+
+        // Now advance time to trigger any additional timers (should be none)
         await fakeTime.nextAsync();
+
+        // Finally await the original promise to get the result
+        // By now all async operations have completed thanks to our time control
         const response = await requestPromise;
         expect(response.body).toEqual(successResponse.body);
         expect(sendStub.calls.length).toBe(2);
@@ -535,12 +550,27 @@ Deno.test('GroupsEndpoint', async (t) => {
       });
       const debugStub = stub(mockLogger, 'debug', () => {});
       try {
-        // Start the request
+        // Start the async request but DON'T await it yet
+        // This begins the async chain but allows us to control timing with FakeTime
         const requestPromise = endpoint.getGroups();
+
         // Allow the first request to complete and set up the timer
+        // This advances fake time to let the setTimeout callback fire
         await fakeTime.nextAsync();
-        // Now advance time to trigger the retry
+
+        // Verify the first request completed and retry was triggered
+        // At this point: initial request failed → setTimeout set → timeout fired → retry executed
+        expect(sendStub.calls.length).toBe(2);
+        expect(sendStub.calls[0].args[0].method).toBe('GET');
+        expect(sendStub.calls[0].args[0].path).toBe('/groups');
+        expect(sendStub.calls[1].args[0].method).toBe('GET');
+        expect(sendStub.calls[1].args[0].path).toBe('/groups');
+
+        // Now advance time to trigger any additional timers (should be none)
         await fakeTime.nextAsync();
+
+        // Finally await the original promise to get the result
+        // By now all async operations have completed thanks to our time control
         const response = await requestPromise;
         expect(response.body).toEqual(successResponse.body);
         expect(sendStub.calls.length).toBe(2);

@@ -178,13 +178,23 @@ Deno.test('RequestHandler', async (t) => {
         responses: [mockRateLimitResponse, mockSuccessResponse],
       });
 
+      // Start the async request but DON'T await it yet
+      // This begins the async chain but allows us to control timing with FakeTime
       const requestPromise = requestHandler.get({ path: '/test' });
 
       // Allow the first request to complete and set up the timer
+      // This advances fake time to let the setTimeout callback fire
       await fakeTime.nextAsync();
-      // Now advance time to trigger the retry
+      // Verify the first request completed and retry was triggered
+      // At this point: initial request failed → setTimeout set → timeout fired → retry executed
+      expect(mockHttpClient.requests.length).toBe(2);
+      expect(mockHttpClient.requests[0].retryAttempt).toBe(0);
+      expect(mockHttpClient.requests[1].retryAttempt).toBe(1);
+      // Now advance time to trigger any additional timers (should be none)
       await fakeTime.nextAsync();
 
+      // Finally await the original promise to get the result
+      // By now all async operations have completed thanks to our time control
       const response = await requestPromise;
 
       expect(response.status).toBe(200);
@@ -211,13 +221,23 @@ Deno.test('RequestHandler', async (t) => {
         responses: [mockServerErrorResponse, mockSuccessResponse],
       });
 
+      // Start the async request but DON'T await it yet
+      // This begins the async chain but allows us to control timing with FakeTime
       const requestPromise = requestHandler.get({ path: '/test' });
 
       // Allow the first request to complete and set up the timer
+      // This advances fake time to let the setTimeout callback fire
       await fakeTime.nextAsync();
-      // Now advance time to trigger the retry
+      // Verify the first request completed and retry was triggered
+      // At this point: initial request failed → setTimeout set → timeout fired → retry executed
+      expect(mockHttpClient.requests.length).toBe(2);
+      expect(mockHttpClient.requests[0].retryAttempt).toBe(0);
+      expect(mockHttpClient.requests[1].retryAttempt).toBe(1);
+      // Now advance time to trigger any additional timers (should be none)
       await fakeTime.nextAsync();
 
+      // Finally await the original promise to get the result
+      // By now all async operations have completed thanks to our time control
       const response = await requestPromise;
 
       expect(response.status).toBe(200);
@@ -401,13 +421,23 @@ Deno.test('RequestHandler', async (t) => {
       const debugStub = stub(mockLogger, 'debug', () => {});
 
       try {
+        // Start the async request but DON'T await it yet
+        // This begins the async chain but allows us to control timing with FakeTime
         const requestPromise = requestHandler.get({ path: '/test' });
 
         // Allow the first request to complete and set up the timer
+        // This advances fake time to let the setTimeout callback fire
         await fakeTime.nextAsync();
-        // Now advance time to trigger the retry
+        // Verify the first request completed and retry was triggered
+        // At this point: initial request failed → setTimeout set → timeout fired → retry executed
+        expect(mockHttpClient.requests.length).toBe(2);
+        expect(mockHttpClient.requests[0].retryAttempt).toBe(0);
+        expect(mockHttpClient.requests[1].retryAttempt).toBe(1);
+        // Now advance time to trigger any additional timers (should be none)
         await fakeTime.nextAsync();
 
+        // Finally await the original promise to get the result
+        // By now all async operations have completed thanks to our time control
         const response = await requestPromise;
 
         expect(response.status).toBe(200);
@@ -555,13 +585,23 @@ Deno.test('RequestHandler', async (t) => {
       const debugStub = stub(mockLogger, 'debug', () => {});
 
       try {
+        // Start the async request but DON'T await it yet
+        // This begins the async chain but allows us to control timing with FakeTime
         const requestPromise = requestHandler.get({ path: '/test' });
 
         // Allow the first request to complete and set up the timer
+        // This advances fake time to let the setTimeout callback fire
         await fakeTime.nextAsync();
-        // Now advance time to trigger the retry
+        // Verify the first request completed and retry was triggered
+        // At this point: initial request failed → setTimeout set → timeout fired → retry executed
+        expect(mockHttpClient.requests.length).toBe(2);
+        expect(mockHttpClient.requests[0].retryAttempt).toBe(0);
+        expect(mockHttpClient.requests[1].retryAttempt).toBe(1);
+        // Now advance time to trigger any additional timers (should be none)
         await fakeTime.nextAsync();
 
+        // Finally await the original promise to get the result
+        // By now all async operations have completed thanks to our time control
         const response = await requestPromise;
 
         expect(response.status).toBe(200);
@@ -601,7 +641,11 @@ Deno.test('RequestHandler', async (t) => {
 
         // Allow the first request to complete and set up the timer
         await fakeTime.nextAsync();
-        // Now advance time to trigger the retry
+        // Verify the first request completed and retry was triggered
+        expect(mockHttpClient.requests.length).toBe(2);
+        expect(mockHttpClient.requests[0].retryAttempt).toBe(0);
+        expect(mockHttpClient.requests[1].retryAttempt).toBe(1);
+        // Now advance time to trigger any additional timers (should be none)
         await fakeTime.nextAsync();
 
         const response = await requestPromise;
