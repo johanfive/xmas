@@ -74,7 +74,7 @@ Deno.test('ResourceClient', async (t) => {
     await client.get({ path: 'members' });
     const requests = mockHttpClient.getRequestHistory();
     expect(requests).toHaveLength(1);
-    expect(requests[0].path).toBe('/groups/members');
+    expect(requests[0].url).toBe('https://test.xmatters.com/api/xm/1/groups/members');
   });
 
   await t.step('get() - uses base path when no path provided', async () => {
@@ -88,7 +88,7 @@ Deno.test('ResourceClient', async (t) => {
     await client.get({});
     const requests = mockHttpClient.getRequestHistory();
     expect(requests).toHaveLength(1);
-    expect(requests[0].path).toBe('/groups');
+    expect(requests[0].url).toBe('https://test.xmatters.com/api/xm/1/groups');
   });
 
   await t.step('get() - strips leading slash from provided path', async () => {
@@ -102,7 +102,7 @@ Deno.test('ResourceClient', async (t) => {
     await client.get({ path: '/members' });
     const requests = mockHttpClient.getRequestHistory();
     expect(requests).toHaveLength(1);
-    expect(requests[0].path).toBe('/groups/members');
+    expect(requests[0].url).toBe('https://test.xmatters.com/api/xm/1/groups/members');
   });
 
   await t.step('post() - prepends base path correctly', async () => {
@@ -119,7 +119,7 @@ Deno.test('ResourceClient', async (t) => {
     });
     const requests = mockHttpClient.getRequestHistory();
     expect(requests).toHaveLength(1);
-    expect(requests[0].path).toBe('/groups/new-group');
+    expect(requests[0].url).toBe('https://test.xmatters.com/api/xm/1/groups/new-group');
     expect(requests[0].method).toBe('POST');
   });
 
@@ -137,7 +137,7 @@ Deno.test('ResourceClient', async (t) => {
     });
     const requests = mockHttpClient.getRequestHistory();
     expect(requests).toHaveLength(1);
-    expect(requests[0].path).toBe('/groups/123');
+    expect(requests[0].url).toBe('https://test.xmatters.com/api/xm/1/groups/123');
     expect(requests[0].method).toBe('PUT');
   });
   await t.step('patch() - prepends base path correctly', async () => {
@@ -154,7 +154,7 @@ Deno.test('ResourceClient', async (t) => {
     });
     const requests = mockHttpClient.getRequestHistory();
     expect(requests).toHaveLength(1);
-    expect(requests[0].path).toBe('/groups/123');
+    expect(requests[0].url).toBe('https://test.xmatters.com/api/xm/1/groups/123');
     expect(requests[0].method).toBe('PATCH');
   });
 
@@ -169,7 +169,7 @@ Deno.test('ResourceClient', async (t) => {
     await client.delete({ path: '123' });
     const requests = mockHttpClient.getRequestHistory();
     expect(requests).toHaveLength(1);
-    expect(requests[0].path).toBe('/groups/123');
+    expect(requests[0].url).toBe('https://test.xmatters.com/api/xm/1/groups/123');
     expect(requests[0].method).toBe('DELETE');
   });
 
@@ -184,7 +184,7 @@ Deno.test('ResourceClient', async (t) => {
     await client.get({ path: '123/members/456' });
     const requests = mockHttpClient.getRequestHistory();
     expect(requests).toHaveLength(1);
-    expect(requests[0].path).toBe('/groups/123/members/456');
+    expect(requests[0].url).toBe('https://test.xmatters.com/api/xm/1/groups/123/members/456');
   });
 
   await t.step('Passes through all other options unchanged', async () => {
@@ -206,7 +206,8 @@ Deno.test('ResourceClient', async (t) => {
     expect(requests).toHaveLength(1);
     // Check that custom headers are included
     expect(requests[0].headers?.['Custom-Header']).toBe('test-value');
-    // Check that query parameters are passed through
-    expect(requests[0].query).toEqual(testQuery);
+    expect(requests[0].url).toBe(
+      'https://test.xmatters.com/api/xm/1/groups/members?page=1&limit=10',
+    );
   });
 });

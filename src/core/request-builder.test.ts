@@ -50,12 +50,10 @@ Deno.test('RequestBuilder', async (t) => {
     const { builder } = createRequestBuilderTestSetup();
     const request = builder.build(mockRelativePathOptions);
     expect(request.url).toBe('https://example.xmatters.com/api/xm/1/people?search=test&limit=10');
-    expect(request.path).toBe('/people');
     expect(request.method).toBe('GET');
     expect(request.headers?.['Content-Type']).toBe('application/json');
     expect(request.headers?.['Accept']).toBe('application/json');
     expect(request.headers?.['default-header']).toBe('default-value');
-    expect(request.query).toEqual({ search: 'test', limit: 10 });
     expect(request.retryAttempt).toBe(0);
   });
 
@@ -63,12 +61,10 @@ Deno.test('RequestBuilder', async (t) => {
     const { builder } = createRequestBuilderTestSetup();
     const request = builder.build(mockExternalUrlOptions);
     expect(request.url).toBe('https://api.external-service.com/v2/endpoint?key=value');
-    expect(request.path).toBe('https://api.external-service.com/v2/endpoint');
     expect(request.method).toBe('POST');
     expect(request.headers?.['Content-Type']).toBe('application/json');
     expect(request.headers?.['Accept']).toBe('application/json');
     expect(request.headers?.['Authorization']).toBe('Bearer token');
-    expect(request.query).toEqual({ key: 'value' });
   });
 
   await t.step('preserves existing query parameters in external URLs', () => {
@@ -83,9 +79,6 @@ Deno.test('RequestBuilder', async (t) => {
     expect(url.searchParams.get('another')).toBe('value');
     expect(url.searchParams.get('additional')).toBe('param');
     expect(url.searchParams.get('new')).toBe('value');
-    expect(request.path).toBe(
-      'https://api.external-service.com/search?existing=param&another=value',
-    );
   });
 
   await t.step('merges headers correctly - request headers override defaults', () => {
@@ -106,7 +99,6 @@ Deno.test('RequestBuilder', async (t) => {
     };
     const request = builder.build(options);
     expect(request.method).toBe('GET');
-    expect(request.path).toBe('/users');
     expect(request.url).toBe('https://example.xmatters.com/api/xm/1/users');
   });
 
@@ -118,7 +110,6 @@ Deno.test('RequestBuilder', async (t) => {
     };
     const request = builder.build(options);
     expect(request.url).toBe('https://example.xmatters.com/api/xm/1/devices');
-    expect(request.query).toEqual({});
   });
 
   await t.step('filters out null and undefined query parameters', () => {
@@ -149,7 +140,6 @@ Deno.test('RequestBuilder', async (t) => {
     };
     const request = builder.build(options);
     expect(request.url).toBe('https://custom.xmatters.com/api/xm/1/notifications');
-    expect(request.path).toBe('/notifications');
   });
 
   await t.step('works with empty default headers', () => {
@@ -248,13 +238,7 @@ Deno.test('RequestBuilder', async (t) => {
     expect(request.url).toBe(
       'https://example.xmatters.com/api/xm/1/forms/abc123/submissions?status=pending&priority=high&assignee=user123',
     );
-    expect(request.path).toBe('/forms/abc123/submissions');
     expect(request.method).toBe('PATCH');
-    expect(request.query).toEqual({
-      status: 'pending',
-      priority: 'high',
-      assignee: 'user123',
-    });
     expect(request.headers?.['Authorization']).toBe('Bearer access-token');
     expect(request.headers?.['X-Custom-Header']).toBe('custom-value');
     expect(request.headers?.['Content-Type']).toBe('application/vnd.api+json');
@@ -270,5 +254,38 @@ Deno.test('RequestBuilder', async (t) => {
       },
     });
     expect(request.retryAttempt).toBe(1);
+  });
+
+  await t.step('integration - verifies external URL is correctly passed to HTTP client', () => {
+    // This test ensures that when using fullUrl, the complete external URL
+    // (not just the path) is properly passed to the underlying HTTP client
+    const { builder } = createRequestBuilderTestSetup();
+    const request = builder.build({
+      fullUrl: 'https://api.external-service.com/v2/endpoint',
+      query: { test: 'param' },
+    });
+
+    // Verify the request.url contains the complete external URL with query params
+    expect(request.url).toBe('https://api.external-service.com/v2/endpoint?test=param');
+
+    // This ensures consumers using fullUrl to bypass xMatters API get the complete external URL
+    expect(request.url).not.toContain('/api/xm/1'); // Should not contain API version
+    expect(request.url).toContain('api.external-service.com'); // Should contain external domain
+  });
+
+  await t.step('integration - verifies API path is correctly built with base URL', () => {
+    // This test ensures that relative API paths are correctly combined with the base URL
+    const { builder } = createRequestBuilderTestSetup();
+    const request = builder.build({
+      path: '/groups',
+      query: { search: 'test' },
+    });
+
+    // Verify the request.url contains the complete API URL
+    expect(request.url).toBe('https://example.xmatters.com/api/xm/1/groups?search=test');
+
+    // This ensures regular API calls get the proper xMatters API URL structure
+    expect(request.url).toContain('/api/xm/1'); // Should contain API version
+    expect(request.url).toContain('example.xmatters.com'); // Should contain configured hostname
   });
 });

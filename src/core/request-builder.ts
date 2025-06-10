@@ -5,7 +5,7 @@ import { XmApiError } from './errors.ts';
  * Request options for building HTTP requests.
  * Either path or fullUrl must be provided, but not both.
  */
-export interface RequestBuildOptions extends Partial<HttpRequest> {
+export interface RequestBuildOptions {
   /**
    * The path relative to the API version path.
    * Do not include the API version (/api/xm/1).
@@ -20,6 +20,21 @@ export interface RequestBuildOptions extends Partial<HttpRequest> {
    * @example "https://api.external-service.com/v2/endpoint"
    */
   fullUrl?: string;
+
+  /** The HTTP method to use for the request */
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+  /** Optional headers to send with the request */
+  headers?: Record<string, string>;
+
+  /** Optional query parameters to include in the URL */
+  query?: Record<string, unknown>;
+
+  /** Optional request body */
+  body?: unknown;
+
+  /** Used internally for retry logic */
+  retryAttempt?: number;
 }
 
 export class RequestBuilder {
@@ -64,10 +79,7 @@ export class RequestBuilder {
 
     const builtRequest: HttpRequest = {
       method: options.method || 'GET',
-      // For the path property, use the actual path provided or extract it from fullUrl
-      path: options.path || options.fullUrl || '',
       url: url.toString(),
-      query: options.query,
       headers,
       body: options.body,
       retryAttempt: options.retryAttempt || 0,

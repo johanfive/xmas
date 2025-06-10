@@ -17,22 +17,20 @@ export interface HttpResponse<T = unknown> {
 }
 
 /**
- * Represents an HTTP request to be sent to the xMatters API.
+ * Represents a fully-prepared HTTP request ready to be sent.
+ * This interface is designed to work with any HTTP client implementation.
+ * All URL construction, query parameter handling, and header preparation has been completed.
  */
 export interface HttpRequest {
   /** The HTTP method to use for the request */
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-  /** The complete URL for the request */
+  /** The complete, fully-qualified URL ready for the HTTP client to use */
   url: string;
-  /** The path portion of the URL, used for testing and debugging */
-  path: string;
-  /** Optional headers to send with the request */
+  /** Headers to send with the request (includes auth, content-type, etc.) */
   headers?: Record<string, string>;
-  /** Optional query parameters to include in the URL */
-  query?: Record<string, unknown>;
-  /** Optional request body */
+  /** Optional request body (already serialized if needed) */
   body?: unknown;
-  /** Used internally for retry logic */
+  /** Current retry attempt number (for logging/debugging by HTTP clients) */
   retryAttempt?: number;
 }
 

@@ -138,7 +138,7 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - successful token acquisiti
   const request = mockHttpClient.requests[0];
 
   expect(request.method).toBe('POST');
-  expect(request.path).toBe('/oauth2/token');
+  expect(request.url).toBe('https://test.xmatters.com/api/xm/1/oauth2/token');
   expect(request.headers?.['Content-Type']).toBe('application/x-www-form-urlencoded');
   expect(request.headers?.['Accept']).toBe('application/json');
   // Note: skipAuth is handled by RequestHandler.send() and not passed to the HTTP client

@@ -168,10 +168,14 @@ export class RequestHandler {
   }
 
   async send<T>(
-    request: Partial<HttpRequest> & {
+    request: {
       path?: string;
       fullUrl?: string;
       method?: HttpRequest['method'];
+      headers?: Record<string, string>;
+      query?: Record<string, unknown>;
+      body?: unknown;
+      retryAttempt?: number;
       skipAuth?: boolean;
     },
   ): Promise<HttpResponse<T>> {

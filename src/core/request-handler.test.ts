@@ -202,12 +202,10 @@ Deno.test('RequestHandler', async (t) => {
 
       // Verify first request
       const firstRequest = mockHttpClient.requests[0];
-      expect(firstRequest.path).toBe('/test');
       expect(firstRequest.retryAttempt).toBe(0);
 
       // Verify retry request
       const retryRequest = mockHttpClient.requests[1];
-      expect(retryRequest.path).toBe('/test');
       expect(retryRequest.retryAttempt).toBe(1);
     } finally {
       fakeTime.restore();
@@ -379,7 +377,7 @@ Deno.test('RequestHandler', async (t) => {
 
       // Verify token refresh request
       const refreshRequest = mockHttpClient.requests[1];
-      expect(refreshRequest.path).toBe('/oauth2/token');
+      expect(refreshRequest.url).toBe('https://example.xmatters.com/api/xm/1/oauth2/token');
       expect(refreshRequest.headers?.['Content-Type']).toBe('application/x-www-form-urlencoded');
       expect(refreshRequest.body).toBeDefined();
 
@@ -436,7 +434,7 @@ Deno.test('RequestHandler', async (t) => {
         // Now advance time to trigger any additional timers (should be none)
         await fakeTime.nextAsync();
 
-        // Finally await the original promise to get the result
+        // Finally await the original promise to get the response
         // By now all async operations have completed thanks to our time control
         const response = await requestPromise;
 
@@ -663,6 +661,75 @@ Deno.test('RequestHandler', async (t) => {
       }
     } finally {
       fakeTime.restore();
+    }
+  });
+
+  await t.step(
+    'integration - verifies external URL is passed correctly to HTTP client',
+    async () => {
+      // This test ensures that when using fullUrl, the external URL is properly passed
+      // to the HTTP client, not the xMatters API URL
+      const mockHttpClient = new MockHttpClient([mockSuccessResponse]);
+
+      const requestHandler = new RequestHandler({
+        hostname: 'https://company.xmatters.com',
+        username: 'testuser',
+        password: 'testpass',
+        httpClient: mockHttpClient,
+        logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
+      });
+
+      try {
+        await requestHandler.send({
+          fullUrl: 'https://api.external-service.com/v2/endpoint',
+          query: { test: 'param' },
+          method: 'GET',
+        });
+
+        // Verify that the HTTP client received the correct external URL
+        expect(mockHttpClient.requests.length).toBe(1);
+        const sentRequest = mockHttpClient.requests[0];
+
+        // The key assertion: HTTP client should receive the external URL, not the xMatters API URL
+        expect(sentRequest.url).toBe('https://api.external-service.com/v2/endpoint?test=param');
+        expect(sentRequest.url).not.toContain('company.xmatters.com'); // Should not contain xMatters hostname
+        expect(sentRequest.url).not.toContain('/api/xm/1'); // Should not contain API version
+      } finally {
+        mockHttpClient.reset();
+      }
+    },
+  );
+
+  await t.step('integration - verifies API path is passed correctly to HTTP client', async () => {
+    // This test ensures that relative API paths result in correct xMatters API URLs
+    // being passed to the HTTP client
+    const mockHttpClient = new MockHttpClient([mockSuccessResponse]);
+
+    const requestHandler = new RequestHandler({
+      hostname: 'https://company.xmatters.com',
+      username: 'testuser',
+      password: 'testpass',
+      httpClient: mockHttpClient,
+      logger: { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} },
+    });
+
+    try {
+      await requestHandler.send({
+        path: '/groups',
+        query: { search: 'test' },
+        method: 'GET',
+      });
+
+      // Verify that the HTTP client received the correct xMatters API URL
+      expect(mockHttpClient.requests.length).toBe(1);
+      const sentRequest = mockHttpClient.requests[0];
+
+      // The key assertion: HTTP client should receive the full xMatters API URL
+      expect(sentRequest.url).toBe('https://company.xmatters.com/api/xm/1/groups?search=test');
+      expect(sentRequest.url).toContain('company.xmatters.com'); // Should contain xMatters hostname
+      expect(sentRequest.url).toContain('/api/xm/1'); // Should contain API version
+    } finally {
+      mockHttpClient.reset();
     }
   });
 });

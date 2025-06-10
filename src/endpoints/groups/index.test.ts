@@ -153,9 +153,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       // Verify the request details
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
-      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups');
-      expect(sentRequest.query).toBeUndefined();
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
@@ -174,11 +172,9 @@ Deno.test('GroupsEndpoint', async (t) => {
       const response = await endpoint.getGroups({ limit: 10, offset: 20 });
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
-      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe(
         'https://example.xmatters.com/api/xm/1/groups?limit=10&offset=20',
       );
-      expect(sentRequest.query).toEqual({ limit: 10, offset: 20 });
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
@@ -196,11 +192,9 @@ Deno.test('GroupsEndpoint', async (t) => {
       const response = await endpoint.getGroups({ search: 'oncall', limit: 5 });
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
-      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe(
         'https://example.xmatters.com/api/xm/1/groups?search=oncall&limit=5',
       );
-      expect(sentRequest.query).toEqual({ search: 'oncall', limit: 5 });
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
@@ -219,9 +213,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
-      expect(sentRequest.path).toBe('/groups/test-group-123');
       expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups/test-group-123');
-      expect(sentRequest.query).toBeUndefined();
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
@@ -245,9 +237,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('POST');
-      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups');
-      expect(sentRequest.query).toBeUndefined();
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
@@ -266,9 +256,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('DELETE');
-      expect(sentRequest.path).toBe('/groups/test-group-123');
       expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups/test-group-123');
-      expect(sentRequest.query).toBeUndefined();
       expect(sentRequest.body).toBeUndefined();
       expect(response).toEqual(mockEmptyResponse);
     } finally {
@@ -289,9 +277,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
-      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe('https://oauth.xmatters.com/api/xm/1/groups');
-      expect(sentRequest.query).toBeUndefined();
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       expect(sentRequest.headers?.['Authorization']).toBe('Bearer test-access-token');
@@ -357,9 +343,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
-      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe('https://custom.xmatters.com/api/xm/1/groups');
-      expect(sentRequest.query).toBeUndefined();
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
@@ -381,9 +365,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
-      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups');
-      expect(sentRequest.query).toBeUndefined();
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       // Verify the basic auth header
@@ -418,9 +400,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('POST');
-      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups');
-      expect(sentRequest.query).toBeUndefined();
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
@@ -445,11 +425,9 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
-      expect(sentRequest.path).toBe('/groups');
       expect(sentRequest.url).toBe(
         'https://example.xmatters.com/api/xm/1/groups?limit=25&offset=50&search=test+search',
       );
-      expect(sentRequest.query).toEqual(params);
       expect(sentRequest.headers?.['Content-Type']).toBe('application/json');
       expect(sentRequest.headers?.['Accept']).toBe('application/json');
       expect(sentRequest.headers?.['Authorization']?.startsWith('Basic ')).toBe(true);
@@ -495,9 +473,9 @@ Deno.test('GroupsEndpoint', async (t) => {
         // At this point: initial request failed → setTimeout set → timeout fired → retry executed
         expect(sendStub.calls.length).toBe(2);
         expect(sendStub.calls[0].args[0].method).toBe('GET');
-        expect(sendStub.calls[0].args[0].path).toBe('/groups');
+        expect(sendStub.calls[0].args[0].url).toBe('https://example.xmatters.com/api/xm/1/groups');
         expect(sendStub.calls[1].args[0].method).toBe('GET');
-        expect(sendStub.calls[1].args[0].path).toBe('/groups');
+        expect(sendStub.calls[1].args[0].url).toBe('https://example.xmatters.com/api/xm/1/groups');
 
         // Now advance time to trigger any additional timers (should be none)
         await fakeTime.nextAsync();
@@ -510,10 +488,10 @@ Deno.test('GroupsEndpoint', async (t) => {
         // Verify both calls were GET requests to /groups
         const firstRequest: HttpRequest = sendStub.calls[0].args[0];
         expect(firstRequest.method).toBe('GET');
-        expect(firstRequest.path).toBe('/groups');
+        expect(firstRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups');
         const retryRequest: HttpRequest = sendStub.calls[1].args[0];
         expect(retryRequest.method).toBe('GET');
-        expect(retryRequest.path).toBe('/groups');
+        expect(retryRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups');
         expect(debugStub.calls.length).toBe(1);
         expect(debugStub.calls[0].args[0]).toBe(
           'Request failed with status 429, retrying in 2000ms (attempt 1/3)',
@@ -562,9 +540,9 @@ Deno.test('GroupsEndpoint', async (t) => {
         // At this point: initial request failed → setTimeout set → timeout fired → retry executed
         expect(sendStub.calls.length).toBe(2);
         expect(sendStub.calls[0].args[0].method).toBe('GET');
-        expect(sendStub.calls[0].args[0].path).toBe('/groups');
+        expect(sendStub.calls[0].args[0].url).toBe('https://example.xmatters.com/api/xm/1/groups');
         expect(sendStub.calls[1].args[0].method).toBe('GET');
-        expect(sendStub.calls[1].args[0].path).toBe('/groups');
+        expect(sendStub.calls[1].args[0].url).toBe('https://example.xmatters.com/api/xm/1/groups');
 
         // Now advance time to trigger any additional timers (should be none)
         await fakeTime.nextAsync();
@@ -626,7 +604,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     const sendStub = stub(mockHttpClient, 'send', (request: HttpRequest) => {
       callCount++;
       // Check if this is a token refresh request
-      if (request.path === '/oauth2/token' || request.url?.includes('/oauth2/token')) {
+      if (request.url?.includes('/oauth2/token') || request.url?.includes('/oauth2/token')) {
         return Promise.resolve(tokenRefreshResponse);
       }
       // Otherwise it's the main API request
@@ -674,7 +652,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     const sendStub = stub(mockHttpClient, 'send', (request: HttpRequest) => {
       callCount++;
       // Check if this is a token refresh request
-      if (request.path === '/oauth2/token' || request.url?.includes('/oauth2/token')) {
+      if (request.url?.includes('/oauth2/token') || request.url?.includes('/oauth2/token')) {
         return Promise.resolve(tokenRefreshErrorResponse);
       }
       // Otherwise it's the main API request
