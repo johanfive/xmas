@@ -78,7 +78,7 @@ console.log('Headers:', response.headers);
 console.log('Created group:', response.body);
 
 // Get groups with pagination:
-const groupsResponse = await xmas.groups.getGroups({ limit: 10, offset: 0 });
+const groupsResponse = await xmas.groups.get({ limit: 10, offset: 0 });
 console.log('Total groups:', groupsResponse.body.total);
 groupsResponse.body.data.forEach((group) => {
   console.log('Group:', group.targetName);
