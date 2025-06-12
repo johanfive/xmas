@@ -10,7 +10,7 @@ import type { HttpClient, HttpRequest, HttpResponse } from '../../core/types/int
 import type {
   Logger,
   TokenRefreshCallback,
-  XmApiOptions,
+  XmApiConfig,
 } from '../../core/types/internal/config.ts';
 import type { TokenResponse } from './types.ts';
 
@@ -74,10 +74,10 @@ function createTestRequestHandler(options: {
   const mockHttpClient = new MockHttpClient(responses);
 
   // Create auth options based on provided parameters
-  let mockOptions: XmApiOptions;
+  let mockConfig: XmApiConfig;
   if (accessToken && refreshToken && clientId) {
     // OAuth configuration - all three are required
-    mockOptions = {
+    mockConfig = {
       hostname,
       accessToken,
       refreshToken,
@@ -90,7 +90,7 @@ function createTestRequestHandler(options: {
   } else {
     // Create basic auth options even with missing fields so OAuth endpoint can validate them specifically
     // Use a partial basic auth config to test missing field validation
-    mockOptions = {
+    mockConfig = {
       hostname,
       username: username!,
       password: password!,
@@ -99,10 +99,10 @@ function createTestRequestHandler(options: {
       maxRetries: 3,
       httpClient: mockHttpClient,
       logger: mockLogger,
-    } as XmApiOptions;
+    } as XmApiConfig;
   }
 
-  const requestHandler = new RequestHandler(mockOptions);
+  const requestHandler = new RequestHandler(mockConfig);
 
   return { requestHandler, mockHttpClient, mockLogger };
 }

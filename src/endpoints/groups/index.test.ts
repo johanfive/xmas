@@ -25,7 +25,7 @@ import { FakeTime } from 'https://deno.land/std@0.224.0/testing/time.ts';
 import { GroupsEndpoint } from './index.ts';
 import { RequestHandler } from '../../core/request-handler.ts';
 import type { HttpClient, HttpRequest } from '../../core/types/internal/http.ts';
-import type { Logger, XmApiOptions } from '../../core/types/internal/config.ts';
+import type { Logger, XmApiConfig } from '../../core/types/internal/config.ts';
 import type { Group } from './types.ts';
 import { XmApiError } from '../../core/errors.ts';
 
@@ -65,10 +65,10 @@ function createEndpointTestSetup(options: {
     send: () => Promise.resolve({ status: 200, headers: {}, body: {} }),
   };
 
-  let mockOptions: XmApiOptions;
+  let mockConfig: XmApiConfig;
   if (accessToken && refreshToken && clientId) {
     // OAuth configuration - all three are required
-    mockOptions = {
+    mockConfig = {
       hostname,
       accessToken,
       refreshToken,
@@ -80,7 +80,7 @@ function createEndpointTestSetup(options: {
     };
   } else {
     // Basic auth configuration
-    mockOptions = {
+    mockConfig = {
       hostname,
       username,
       password,
@@ -91,7 +91,7 @@ function createEndpointTestSetup(options: {
     };
   }
 
-  const requestHandler = new RequestHandler(mockOptions);
+  const requestHandler = new RequestHandler(mockConfig);
   const endpoint = new GroupsEndpoint(requestHandler);
 
   return { mockHttpClient, endpoint, mockLogger };
@@ -492,8 +492,9 @@ Deno.test('GroupsEndpoint', async (t) => {
         const retryRequest: HttpRequest = sendStub.calls[1].args[0];
         expect(retryRequest.method).toBe('GET');
         expect(retryRequest.url).toBe('https://example.xmatters.com/api/xm/1/groups');
-        expect(debugStub.calls.length).toBe(1);
-        expect(debugStub.calls[0].args[0]).toBe(
+        // Should be: initial request log + retry message + retry request log = 3 calls
+        expect(debugStub.calls.length).toBe(3);
+        expect(debugStub.calls[1].args[0]).toBe(
           'Request failed with status 429, retrying in 2000ms (attempt 1/3)',
         );
       } finally {
@@ -553,8 +554,9 @@ Deno.test('GroupsEndpoint', async (t) => {
         expect(response.body).toEqual(successResponse.body);
         expect(sendStub.calls.length).toBe(2);
         // Verify debug logger was called with correct retry message
-        expect(debugStub.calls.length).toBe(1);
-        expect(debugStub.calls[0].args[0]).toBe(
+        // Should be: initial request log + retry message + retry request log = 3 calls
+        expect(debugStub.calls.length).toBe(3);
+        expect(debugStub.calls[1].args[0]).toBe(
           'Request failed with status 503, retrying in 1000ms (attempt 1/3)',
         );
       } finally {

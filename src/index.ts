@@ -1,5 +1,5 @@
 import { RequestHandler } from './core/request-handler.ts';
-import { XmApiOptions } from './core/types/internal/config.ts';
+import { XmApiConfig } from './core/types/internal/config.ts';
 import { GroupsEndpoint } from './endpoints/groups/index.ts';
 import { OAuthEndpoint } from './endpoints/oauth/index.ts';
 
@@ -47,8 +47,8 @@ export class XmApi {
   /** Access OAuth-related endpoints for token acquisition */
   public readonly oauth: OAuthEndpoint;
 
-  constructor(options: XmApiOptions) {
-    this.http = new RequestHandler(options);
+  constructor(config: XmApiConfig) {
+    this.http = new RequestHandler(config);
     // Initialize endpoints
     this.groups = new GroupsEndpoint(this.http);
     this.oauth = new OAuthEndpoint(this.http);

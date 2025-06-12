@@ -69,18 +69,18 @@ export interface XmApiOAuthOptions extends XmApiBaseOptions {
 /**
  * Union type of all possible configuration options.
  */
-export type XmApiOptions = XmApiBasicAuthOptions | XmApiOAuthOptions;
+export type XmApiConfig = XmApiBasicAuthOptions | XmApiOAuthOptions;
 
 /**
  * Type guard to determine if options are for OAuth authentication with existing tokens.
  */
-export function isOAuthOptions(options: XmApiOptions): options is XmApiOAuthOptions {
+export function isOAuthOptions(options: XmApiConfig): options is XmApiOAuthOptions {
   return 'accessToken' in options;
 }
 
 /**
  * Type guard to determine if options are for basic authentication.
  */
-export function isBasicAuthOptions(options: XmApiOptions): options is XmApiBasicAuthOptions {
+export function isBasicAuthOptions(options: XmApiConfig): options is XmApiBasicAuthOptions {
   return 'username' in options && 'password' in options;
 }

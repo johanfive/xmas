@@ -15,7 +15,7 @@ import { FakeTime } from 'https://deno.land/std@0.224.0/testing/time.ts';
 import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts';
 import { RequestHandler } from './request-handler.ts';
 import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
-import type { Logger, XmApiOptions } from './types/internal/config.ts';
+import type { Logger, XmApiConfig } from './types/internal/config.ts';
 import { XmApiError } from './errors.ts';
 
 /**
@@ -78,10 +78,10 @@ function createRequestHandlerTestSetup(options: {
   // Create auth options based on provided parameters
   const mockHttpClient = new MockHttpClient(responses);
 
-  let mockOptions: XmApiOptions;
+  let mockConfig: XmApiConfig;
   if (accessToken && refreshToken && clientId) {
     // OAuth configuration - all three are required
-    mockOptions = {
+    mockConfig = {
       hostname,
       accessToken,
       refreshToken,
@@ -92,7 +92,7 @@ function createRequestHandlerTestSetup(options: {
     };
   } else {
     // Basic auth configuration
-    mockOptions = {
+    mockConfig = {
       hostname,
       username,
       password,
@@ -102,7 +102,7 @@ function createRequestHandlerTestSetup(options: {
     };
   }
 
-  const requestHandler = new RequestHandler(mockOptions);
+  const requestHandler = new RequestHandler(mockConfig);
 
   return { mockHttpClient, requestHandler, mockLogger };
 }
@@ -442,8 +442,9 @@ Deno.test('RequestHandler', async (t) => {
         expect(mockHttpClient.requests.length).toBe(2);
 
         // Verify debug logger was called with correct retry message
-        expect(debugStub.calls.length).toBe(1);
-        expect(debugStub.calls[0].args[0]).toBe(
+        // Should be: initial request log + retry message + retry request log = 3 calls
+        expect(debugStub.calls.length).toBe(3);
+        expect(debugStub.calls[1].args[0]).toBe(
           'Request failed with status 429, retrying in 1000ms (attempt 1/3)',
         );
       } finally {
@@ -606,8 +607,9 @@ Deno.test('RequestHandler', async (t) => {
         expect(mockHttpClient.requests.length).toBe(2);
 
         // Verify debug logger was called with exponential backoff message
-        expect(debugStub.calls.length).toBe(1);
-        expect(debugStub.calls[0].args[0]).toBe(
+        // Should be: initial request log + retry message + retry request log = 3 calls
+        expect(debugStub.calls.length).toBe(3);
+        expect(debugStub.calls[1].args[0]).toBe(
           'Request failed with status 503, retrying in 1000ms (attempt 1/3)',
         );
       } finally {
@@ -652,8 +654,9 @@ Deno.test('RequestHandler', async (t) => {
         expect(mockHttpClient.requests.length).toBe(2);
 
         // Verify debug logger was called with Retry-After header value
-        expect(debugStub.calls.length).toBe(1);
-        expect(debugStub.calls[0].args[0]).toBe(
+        // Should be: initial request log + retry message + retry request log = 3 calls
+        expect(debugStub.calls.length).toBe(3);
+        expect(debugStub.calls[1].args[0]).toBe(
           'Request failed with status 429, retrying in 5000ms (attempt 1/3)',
         );
       } finally {

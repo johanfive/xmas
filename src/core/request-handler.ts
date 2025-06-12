@@ -5,7 +5,7 @@ import {
   isOAuthOptions,
   Logger,
   TokenRefreshCallback,
-  XmApiOptions,
+  XmApiConfig,
 } from './types/internal/config.ts';
 import { DeleteOptions, GetOptions, RequestWithBodyOptions } from './types/internal/methods.ts';
 import { XmApiError } from './errors.ts';
@@ -28,19 +28,19 @@ export class RequestHandler {
   private readonly maxRetries: number;
 
   constructor(
-    private readonly options: XmApiOptions,
+    private readonly config: XmApiConfig,
   ) {
     // Set up internal properties
-    this.client = options.httpClient ?? new DefaultHttpClient();
-    this.logger = options.logger ?? defaultLogger;
-    this.onTokenRefresh = options.onTokenRefresh;
-    this.maxRetries = options.maxRetries ?? 3;
+    this.client = config.httpClient ?? new DefaultHttpClient();
+    this.logger = config.logger ?? defaultLogger;
+    this.onTokenRefresh = config.onTokenRefresh;
+    this.maxRetries = config.maxRetries ?? 3;
     // Create initial token state for OAuth if needed
-    if (isOAuthOptions(options)) {
+    if (isOAuthOptions(config)) {
       this.tokenState = {
-        accessToken: options.accessToken,
-        refreshToken: options.refreshToken,
-        clientId: options.clientId,
+        accessToken: config.accessToken,
+        refreshToken: config.refreshToken,
+        clientId: config.clientId,
         // Set a default expiry 5 minutes from now - we'll get the real value on first refresh
         expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
         scopes: [],
@@ -50,9 +50,9 @@ export class RequestHandler {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      ...options.defaultHeaders,
+      ...config.defaultHeaders,
     };
-    this.requestBuilder = new RequestBuilder(options.hostname, headers);
+    this.requestBuilder = new RequestBuilder(config.hostname, headers);
   }
 
   /**
@@ -153,14 +153,14 @@ export class RequestHandler {
    * Creates the authorization header value based on the authentication type
    */
   private createAuthHeader(): string | undefined {
-    if (isOAuthOptions(this.options)) {
+    if (isOAuthOptions(this.config)) {
       // For OAuth, get the current access token from token state
       const currentToken = this.tokenState?.accessToken;
       return currentToken ? `Bearer ${currentToken}` : undefined;
-    } else if (isBasicAuthOptions(this.options)) {
+    } else if (isBasicAuthOptions(this.config)) {
       // In Deno, we use TextEncoder for proper UTF-8 encoding
       const encoder = new TextEncoder();
-      const authString = `${this.options.username}:${this.options.password}`;
+      const authString = `${this.config.username}:${this.config.password}`;
       const auth = btoa(String.fromCharCode(...encoder.encode(authString)));
       return `Basic ${auth}`;
     }
@@ -275,11 +275,11 @@ export class RequestHandler {
    * This allows endpoints to access these credentials for OAuth token acquisition.
    */
   getBasicAuthCredentials(): BasicAuthCredentials | undefined {
-    if (isBasicAuthOptions(this.options)) {
+    if (isBasicAuthOptions(this.config)) {
       return {
-        username: this.options.username,
-        password: this.options.password,
-        clientId: this.options.clientId,
+        username: this.config.username,
+        password: this.config.password,
+        clientId: this.config.clientId,
       };
     }
     return undefined;
