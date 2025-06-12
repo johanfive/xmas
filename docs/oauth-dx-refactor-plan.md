@@ -367,7 +367,6 @@ Implement endpoint to discover clientId for password flow users.
 - ✅ All three scenarios work as designed
 - ✅ Type safety prevents invalid configurations
 - ✅ Clear error messages guide users to correct usage
-- ✅ Backward compatibility maintained where possible
 - ✅ All tests pass
 - ✅ Documentation is clear and comprehensive
 - ✅ Code is maintainable and extensible
