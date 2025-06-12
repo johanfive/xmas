@@ -4,23 +4,6 @@
  */
 
 /**
- * Request parameters for obtaining OAuth tokens using authorization code grant.
- *
- * All parameters required for the authorization code flow, including those
- * generated during the OAuth authorization process.
- */
-export interface TokenByAuthCodeParams {
-  /** The client ID for the OAuth application */
-  clientId: string;
-  /** Authorization code received from the authorization server */
-  code: string;
-  /** Redirect URI that was used in the authorization request */
-  redirectUri?: string;
-  /** Code verifier for PKCE (Proof Key for Code Exchange) */
-  codeVerifier?: string;
-}
-
-/**
  * The response returned when successfully obtaining OAuth tokens.
  * This matches the exact format returned by the xMatters API.
  */

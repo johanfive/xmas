@@ -271,17 +271,48 @@ export class RequestHandler {
   }
 
   /**
-   * Get basic auth credentials from constructor options if available.
+   * Get authentication credentials from constructor options if available.
    * This allows endpoints to access these credentials for OAuth token acquisition.
+   * Returns undefined if basic auth is not configured OR if required fields are missing.
    */
-  getBasicAuthCredentials(): BasicAuthCredentials | undefined {
+  getAuthCredentials(): BasicAuthCredentials | undefined {
     if (isBasicAuthOptions(this.config)) {
-      return {
-        username: this.config.username,
-        password: this.config.password,
-        clientId: this.config.clientId,
-      };
+      // Only return credentials if we have valid username and password
+      if (this.config.username && this.config.password) {
+        return {
+          username: this.config.username,
+          password: this.config.password,
+          clientId: this.config.clientId,
+        };
+      }
     }
     return undefined;
+  }
+
+  /**
+   * Check if this is basic auth configuration with specific field validation.
+   * Used by OAuth endpoint to provide specific error messages.
+   */
+  validateBasicAuthFields(): { hasBasicAuth: boolean; missingField?: 'username' | 'password' } {
+    if (isBasicAuthOptions(this.config)) {
+      // Only provide specific field errors if we have partial credentials
+      // If both username and password are missing, treat as "no credentials"
+      const hasUsername = !!this.config.username;
+      const hasPassword = !!this.config.password;
+
+      if (!hasUsername && !hasPassword) {
+        // Both missing - this is "no credentials" scenario
+        return { hasBasicAuth: false };
+      }
+
+      if (!hasUsername) {
+        return { hasBasicAuth: true, missingField: 'username' };
+      }
+      if (!hasPassword) {
+        return { hasBasicAuth: true, missingField: 'password' };
+      }
+      return { hasBasicAuth: true };
+    }
+    return { hasBasicAuth: false };
   }
 }

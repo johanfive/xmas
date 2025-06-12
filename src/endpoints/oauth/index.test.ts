@@ -94,7 +94,6 @@ function createTestRequestHandler(options: {
       hostname,
       username: username!,
       password: password!,
-      clientId,
       onTokenRefresh,
       maxRetries: 3,
       httpClient: mockHttpClient,
@@ -122,7 +121,7 @@ const mockTokenResponse: HttpResponse<TokenResponse> = {
   },
 };
 
-Deno.test('OAuthEndpoint - getTokensByCredentials() - successful token acquisition', async () => {
+Deno.test('OAuthEndpoint - obtainTokens() - successful token acquisition', async () => {
   const { requestHandler, mockHttpClient } = createTestRequestHandler({
     username: 'test-user',
     password: 'test-password',
@@ -131,7 +130,7 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - successful token acquisiti
   });
 
   const oauthEndpoint = new OAuthEndpoint(requestHandler);
-  const response = await oauthEndpoint.getTokensByCredentials();
+  const response = await oauthEndpoint.obtainTokens({ clientId: 'test-client-id' });
 
   // Verify the request was made correctly
   expect(mockHttpClient.requests).toHaveLength(1);
@@ -162,7 +161,7 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - successful token acquisiti
   expect(response.body.scope).toBe('read write');
 });
 
-Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when no constructor credentials', async () => {
+Deno.test('OAuthEndpoint - obtainTokens() - throws error when no constructor credentials', async () => {
   const { requestHandler, mockHttpClient: _ } = createTestRequestHandler({
     // No credentials provided - this will default to basic auth mode but with missing fields
     responses: [],
@@ -170,15 +169,15 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when no const
 
   const oauthEndpoint = new OAuthEndpoint(requestHandler);
 
-  await expect(oauthEndpoint.getTokensByCredentials()).rejects.toThrow(
-    'clientId is required for OAuth token acquisition. Provide it in the XmApi constructor.',
+  await expect(oauthEndpoint.obtainTokens({ clientId: 'test-client-id' })).rejects.toThrow(
+    'XmApi must be initialized with basic auth credentials (username, password) to acquire OAuth tokens.',
   );
 
   // Verify no HTTP request was made
   expect(_.requests).toHaveLength(0);
 });
 
-Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when clientId is missing', async () => {
+Deno.test('OAuthEndpoint - obtainTokens() - throws error when clientId is missing', async () => {
   const { requestHandler, mockHttpClient: _ } = createTestRequestHandler({
     username: 'test-user',
     password: 'test-password',
@@ -188,14 +187,14 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when clientId
 
   const oauthEndpoint = new OAuthEndpoint(requestHandler);
 
-  await expect(oauthEndpoint.getTokensByCredentials()).rejects.toThrow(
-    'clientId is required for OAuth token acquisition. Provide it in the XmApi constructor.',
+  await expect(oauthEndpoint.obtainTokens({ clientId: '' })).rejects.toThrow(
+    'clientId is required for OAuth token acquisition. Provide it as a parameter to obtainTokens().',
   );
 
   expect(_.requests).toHaveLength(0);
 });
 
-Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when username is missing', async () => {
+Deno.test('OAuthEndpoint - obtainTokens() - throws error when username is missing', async () => {
   const { requestHandler, mockHttpClient: _ } = createTestRequestHandler({
     password: 'test-password',
     clientId: 'test-client-id',
@@ -205,14 +204,14 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when username
 
   const oauthEndpoint = new OAuthEndpoint(requestHandler);
 
-  await expect(oauthEndpoint.getTokensByCredentials()).rejects.toThrow(
+  await expect(oauthEndpoint.obtainTokens({ clientId: 'test-client-id' })).rejects.toThrow(
     'username is required for OAuth token acquisition. Provide it in the XmApi constructor.',
   );
 
   expect(_.requests).toHaveLength(0);
 });
 
-Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when password is missing', async () => {
+Deno.test('OAuthEndpoint - obtainTokens() - throws error when password is missing', async () => {
   const { requestHandler, mockHttpClient: _ } = createTestRequestHandler({
     username: 'test-user',
     clientId: 'test-client-id',
@@ -222,14 +221,14 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when password
 
   const oauthEndpoint = new OAuthEndpoint(requestHandler);
 
-  await expect(oauthEndpoint.getTokensByCredentials()).rejects.toThrow(
+  await expect(oauthEndpoint.obtainTokens({ clientId: 'test-client-id' })).rejects.toThrow(
     'password is required for OAuth token acquisition. Provide it in the XmApi constructor.',
   );
 
   expect(_.requests).toHaveLength(0);
 });
 
-Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when API returns non-200 status', async () => {
+Deno.test('OAuthEndpoint - obtainTokens() - throws error when API returns non-200 status', async () => {
   const errorResponse: HttpResponse<unknown> = {
     status: 401,
     headers: { 'content-type': 'application/json' },
@@ -245,14 +244,14 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - throws error when API retu
 
   const oauthEndpoint = new OAuthEndpoint(requestHandler);
 
-  await expect(oauthEndpoint.getTokensByCredentials()).rejects.toThrow(
+  await expect(oauthEndpoint.obtainTokens({ clientId: 'test-client-id' })).rejects.toThrow(
     'Request failed with status 401',
   );
 
   expect(mockHttpClient.requests).toHaveLength(1);
 });
 
-Deno.test('OAuthEndpoint - getTokensByCredentials() - calls token refresh callback when provided', async () => {
+Deno.test('OAuthEndpoint - obtainTokens() - calls token refresh callback when provided', async () => {
   let callbackCalled = false;
   let receivedAccessToken = '';
   let receivedRefreshToken = '';
@@ -270,7 +269,7 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - calls token refresh callba
   });
 
   const oauthEndpoint = new OAuthEndpoint(requestHandler);
-  await oauthEndpoint.getTokensByCredentials();
+  await oauthEndpoint.obtainTokens({ clientId: 'test-client-id' });
 
   // Verify callback was called with correct tokens
   expect(callbackCalled).toBe(true);
@@ -278,7 +277,7 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - calls token refresh callba
   expect(receivedRefreshToken).toBe('test-refresh-token');
 });
 
-Deno.test('OAuthEndpoint - getTokensByCredentials() - does not fail if token refresh callback throws error', async () => {
+Deno.test('OAuthEndpoint - obtainTokens() - does not fail if token refresh callback throws error', async () => {
   const { requestHandler, mockHttpClient: _ } = createTestRequestHandler({
     username: 'test-user',
     password: 'test-password',
@@ -292,11 +291,11 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - does not fail if token ref
   const oauthEndpoint = new OAuthEndpoint(requestHandler);
 
   // Should not throw error even though callback fails
-  const response = await oauthEndpoint.getTokensByCredentials();
+  const response = await oauthEndpoint.obtainTokens({ clientId: 'test-client-id' });
   expect(response.body.access_token).toBe('test-access-token');
 });
 
-Deno.test('OAuthEndpoint - getTokensByCredentials() - returns raw API response without field transformation', async () => {
+Deno.test('OAuthEndpoint - obtainTokens() - returns raw API response without field transformation', async () => {
   // Response with actual API field names (snake_case)
   const apiResponse: HttpResponse<TokenResponse> = {
     status: 200,
@@ -318,7 +317,7 @@ Deno.test('OAuthEndpoint - getTokensByCredentials() - returns raw API response w
   });
 
   const oauthEndpoint = new OAuthEndpoint(requestHandler);
-  const response = await oauthEndpoint.getTokensByCredentials();
+  const response = await oauthEndpoint.obtainTokens({ clientId: 'test-client-id' });
 
   // Verify that field names are preserved exactly as returned by API
   expect(response.body.access_token).toBe('raw-access-token');
