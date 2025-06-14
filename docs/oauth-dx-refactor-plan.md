@@ -2,16 +2,19 @@
 
 ## Overview
 
-Implement a new DX approach where configuration determines the authentication flow, and `obtainTokens()` is a single smart method that handles different OAuth flows based on the configuration type.
+Implement a new DX approach where configuration determines the authentication flow, and
+`obtainTokens()` is a single smart method that handles different OAuth flows based on the
+configuration type.
 
 ## New DX Design
 
 ### Scenario 1: Basic Auth → OAuth (Password Grant)
+
 ```typescript
 const xm = new XmApi({
   hostname: 'https://company.xmatters.com',
   username: 'user@company.com',
-  password: 'secret'
+  password: 'secret',
   // No clientId - this is pure basic auth configuration
 });
 
@@ -26,11 +29,12 @@ await xm.oauth.obtainTokens({ clientId: 'my-client-id' });
 ```
 
 ### Scenario 2: Auth Code → OAuth
+
 ```typescript
 const xm = new XmApi({
   hostname: 'https://company.xmatters.com',
   authCode: 'received-from-redirect',
-  clientId: 'web-app-client-id' // Required - no discovery path
+  clientId: 'web-app-client-id', // Required - no discovery path
 });
 
 // Must call obtainTokens() before other API calls
@@ -41,12 +45,13 @@ await xm.groups.get();
 ```
 
 ### Scenario 3: Pre-existing OAuth Tokens
+
 ```typescript
 const xm = new XmApi({
   hostname: 'https://company.xmatters.com',
   accessToken: 'existing-token',
   refreshToken: 'existing-refresh',
-  clientId: 'client-id'
+  clientId: 'client-id',
 });
 
 // Already authenticated - can make API calls immediately
@@ -58,6 +63,7 @@ await xm.groups.get();
 ### 1. Type System Rewrite
 
 #### 1.1 New Config Types (`src/core/types/internal/config.ts`)
+
 ```typescript
 // Base configuration
 interface XmApiBaseConfig {
@@ -94,6 +100,7 @@ type XmApiConfig = BasicAuthConfig | AuthCodeConfig | OAuthConfig;
 ```
 
 #### 1.2 New Type Guards
+
 ```typescript
 function isBasicAuthConfig(config: XmApiConfig): config is BasicAuthConfig {
   return 'username' in config && 'password' in config;
@@ -111,11 +118,13 @@ function isOAuthConfig(config: XmApiConfig): config is OAuthConfig {
 ### 2. RequestHandler Updates (`src/core/request-handler.ts`)
 
 #### 2.1 Constructor Updates
+
 - Update constructor to handle new config types
 - Initialize token state for OAuth configs
 - Store auth code data for auth code configs
 
 #### 2.2 New Helper Methods
+
 ```typescript
 // Check if this is basic auth configuration
 hasBasicAuthConfig(): boolean
@@ -134,6 +143,7 @@ isAuthCodePending(): boolean
 ```
 
 #### 2.3 Enhanced send() Method
+
 Add validation in `send()` method to detect when auth code flow hasn't been completed:
 
 ```typescript
@@ -150,6 +160,7 @@ async send<T>(request: RequestBuildOptions): Promise<HttpResponse<T>> {
 ```
 
 #### 2.4 Update Existing Methods
+
 - Update `getAuthCredentials()` to work with new BasicAuthConfig
 - Update `validateBasicAuthFields()` if still needed
 - Update `createAuthHeader()` to handle new config types
@@ -157,6 +168,7 @@ async send<T>(request: RequestBuildOptions): Promise<HttpResponse<T>> {
 ### 3. OAuth Endpoint Rewrite (`src/endpoints/oauth/index.ts`)
 
 #### 3.1 Smart obtainTokens() Method
+
 ```typescript
 async obtainTokens(options?: { clientId?: string }): Promise<HttpResponse<TokenResponse>> {
   const flow = this.detectFlow();
@@ -173,6 +185,7 @@ async obtainTokens(options?: { clientId?: string }): Promise<HttpResponse<TokenR
 ```
 
 #### 3.2 Flow Detection Logic
+
 ```typescript
 private detectFlow(): FlowInfo {
   if (this.http.hasBasicAuthConfig()) {
@@ -199,6 +212,7 @@ private detectFlow(): FlowInfo {
 ```
 
 #### 3.3 Flow Handler Methods
+
 ```typescript
 private async handlePasswordFlow(clientId?: string): Promise<HttpResponse<TokenResponse>> {
   // Get credentials from RequestHandler
@@ -242,6 +256,7 @@ private async discoverClientId(): Promise<string> {
 ### 4. Test Updates
 
 #### 4.1 OAuth Endpoint Tests (`src/endpoints/oauth/index.test.ts`)
+
 - Update test helper `createTestRequestHandler()` to use new config types
 - Add tests for auth code flow
 - Update existing password flow tests
@@ -249,12 +264,14 @@ private async discoverClientId(): Promise<string> {
 - Add tests for error cases (auth code pending, invalid config, etc.)
 
 #### 4.2 RequestHandler Tests (`src/core/request-handler.test.ts`)
+
 - Update tests to use new config types
 - Add tests for new helper methods
 - Add tests for auth code pending validation in send()
 - Update existing authentication tests
 
 #### 4.3 Integration Tests
+
 - Test complete flows end-to-end
 - Test config validation
 - Test error scenarios
@@ -262,6 +279,7 @@ private async discoverClientId(): Promise<string> {
 ### 5. Supporting Type Updates
 
 #### 5.1 OAuth Types (`src/core/types/internal/oauth.ts`)
+
 ```typescript
 // Add auth code related types
 interface AuthCodeData {
@@ -282,6 +300,7 @@ interface FlowInfo {
 ```
 
 #### 5.2 Update BasicAuthCredentials
+
 ```typescript
 // Update to match new BasicAuthConfig (no clientId)
 export type BasicAuthCredentials = Pick<
@@ -293,11 +312,13 @@ export type BasicAuthCredentials = Pick<
 ### 6. Documentation Updates
 
 #### 6.1 Update Method Documentation
+
 - Update JSDoc for `obtainTokens()` method
 - Add examples for all three scenarios
 - Document the flow detection behavior
 
 #### 6.2 Update README and Examples
+
 - Update usage examples in README
 - Update sandbox examples
 - Create migration guide from old API
@@ -305,7 +326,9 @@ export type BasicAuthCredentials = Pick<
 ### 7. Migration Strategy
 
 #### 7.1 Backward Compatibility (Optional)
+
 Consider keeping old method names as deprecated aliases:
+
 ```typescript
 // Deprecated alias
 async getTokensByCredentials(): Promise<HttpResponse<TokenResponse>> {
@@ -315,6 +338,7 @@ async getTokensByCredentials(): Promise<HttpResponse<TokenResponse>> {
 ```
 
 #### 7.2 Breaking Changes
+
 - Constructor parameter types change
 - Some config validation behavior changes
 - Error messages may change
@@ -332,16 +356,19 @@ async getTokensByCredentials(): Promise<HttpResponse<TokenResponse>> {
 ### 9. Key Validation Points
 
 #### 9.1 Config Validation
+
 - BasicAuthConfig: require username + password only (no clientId)
 - AuthCodeConfig: require authCode + clientId
 - OAuthConfig: require all three fields
 
 #### 9.2 Runtime Validation
+
 - Auth code flow: must call obtainTokens() before other API calls
 - Password flow: can use basic auth immediately, obtainTokens() switches to OAuth
 - OAuth flow: can make API calls immediately
 
 #### 9.3 Error Scenarios
+
 - Calling API methods with pending auth code
 - Invalid config combinations
 - Missing required fields
@@ -350,14 +377,17 @@ async getTokensByCredentials(): Promise<HttpResponse<TokenResponse>> {
 ### 10. Future Enhancements
 
 #### 10.1 ClientId Discovery
+
 Implement endpoint to discover clientId for password flow users.
 
 #### 10.2 Additional OAuth Flows
+
 - Device code flow
 - Client credentials flow
 - PKCE support for auth code flow
 
 #### 10.3 Token Management
+
 - Automatic token refresh
 - Token persistence
 - Token validation
