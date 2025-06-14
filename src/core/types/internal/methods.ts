@@ -11,6 +11,8 @@ interface HttpMethodBaseOptions {
   path: string;
   /** Optional headers to send with the request */
   headers?: Record<string, string>;
+  /** Whether to skip adding authentication headers */
+  skipAuth?: boolean;
 }
 
 /**

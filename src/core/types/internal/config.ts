@@ -28,59 +28,67 @@ export type TokenRefreshCallback = (
 /**
  * Base configuration options shared by all authentication methods.
  */
-export interface XmApiBaseOptions {
+export interface XmApiBaseConfig {
   hostname: string;
   httpClient?: HttpClient;
   logger?: Logger;
   defaultHeaders?: Record<string, string>;
   maxRetries?: number;
-  onTokenRefresh?: TokenRefreshCallback; // Optional callback for when OAuth tokens are acquired/refreshed
+  onTokenRefresh?: TokenRefreshCallback;
 }
 
 /**
- * Configuration options for basic authentication.
+ * Basic auth configuration (can transition to OAuth).
+ * No clientId field - this is pure basic auth.
  */
-export interface XmApiBasicAuthOptions extends XmApiBaseOptions {
+export interface BasicAuthConfig extends XmApiBaseConfig {
   username: string;
   password: string;
-  clientId?: string; // Optional for OAuth token acquisition
 }
 
 /**
- * Basic authentication credentials structure.
- * Used when extracting credentials for OAuth token acquisition.
- * This is a subset of XmApiBasicAuthOptions containing only the auth fields.
+ * Auth code configuration (must call obtainTokens before API calls).
+ * ClientId is required - no discovery path.
  */
-export type BasicAuthCredentials = Pick<
-  XmApiBasicAuthOptions,
-  'username' | 'password' | 'clientId'
->;
+export interface AuthCodeConfig extends XmApiBaseConfig {
+  authorizationCode: string; // Changed from authCode to match xMatters API
+  clientId: string;
+  clientSecret?: string; // Optional client secret for enhanced security
+}
 
 /**
- * Configuration options for OAuth authentication with existing tokens.
- * All three fields are required for proper OAuth functionality.
+ * OAuth configuration (ready for API calls).
+ * All OAuth fields are required.
  */
-export interface XmApiOAuthOptions extends XmApiBaseOptions {
+export interface OAuthConfig extends XmApiBaseConfig {
   accessToken: string;
   refreshToken: string;
   clientId: string;
+  expiresAt?: string; // ISO timestamp when the access token expires
 }
 
 /**
  * Union type of all possible configuration options.
  */
-export type XmApiConfig = XmApiBasicAuthOptions | XmApiOAuthOptions;
+export type XmApiConfig = BasicAuthConfig | AuthCodeConfig | OAuthConfig;
 
 /**
- * Type guard to determine if options are for OAuth authentication with existing tokens.
+ * Type guard to determine if config is for basic authentication.
  */
-export function isOAuthOptions(options: XmApiConfig): options is XmApiOAuthOptions {
-  return 'accessToken' in options;
+export function isBasicAuthConfig(config: XmApiConfig): config is BasicAuthConfig {
+  return 'username' in config && 'password' in config;
 }
 
 /**
- * Type guard to determine if options are for basic authentication.
+ * Type guard to determine if config is for auth code flow.
  */
-export function isBasicAuthOptions(options: XmApiConfig): options is XmApiBasicAuthOptions {
-  return 'username' in options && 'password' in options;
+export function isAuthCodeConfig(config: XmApiConfig): config is AuthCodeConfig {
+  return 'authorizationCode' in config;
+}
+
+/**
+ * Type guard to determine if config is for OAuth with existing tokens.
+ */
+export function isOAuthConfig(config: XmApiConfig): config is OAuthConfig {
+  return 'accessToken' in config && 'refreshToken' in config;
 }

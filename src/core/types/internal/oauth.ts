@@ -5,6 +5,7 @@
 
 /**
  * Response from the OAuth2 token endpoint.
+ * Contains only the fields our library actually needs to function.
  */
 export interface OAuth2TokenResponse {
   /** The access token to use for authenticated requests */
@@ -15,8 +16,6 @@ export interface OAuth2TokenResponse {
   expires_in: number;
   /** The type of token, typically 'Bearer' */
   token_type: 'Bearer' | string;
-  /** The scopes granted to the token (space-separated string) */
-  scope?: string;
 }
 
 /**

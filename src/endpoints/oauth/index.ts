@@ -1,7 +1,7 @@
 import { RequestHandler } from '../../core/request-handler.ts';
+import { OAuth2TokenResponse } from '../../core/types/internal/oauth.ts';
+import { HttpResponse } from '../../core/types/internal/http.ts';
 import { XmApiError } from '../../core/errors.ts';
-import { TokenResponse } from './types.ts';
-import type { HttpResponse } from '../../core/types/internal/http.ts';
 
 export class OAuthEndpoint {
   constructor(
@@ -9,83 +9,117 @@ export class OAuthEndpoint {
   ) {}
 
   /**
-   * Obtain OAuth tokens using username and password from constructor, then automatically switch to OAuth mode.
-   * After calling this method, all subsequent API calls will use the acquired OAuth tokens.
-   * This is the "password" grant type in OAuth2 terminology.
+   * Smart method to obtain OAuth tokens based on the current configuration.
    *
-   * The username and password must be provided in the XmApi constructor.
-   * The clientId must be provided as a parameter to this method.
+   * Since config validation guarantees exactly one valid state, we can
+   * determine the flow directly without any convoluted credential checks.
    *
-   * @param options - Options for token acquisition
-   * @param options.clientId - OAuth client ID for token acquisition
-   * @returns Promise resolving to HTTP response containing token information
-   *
-   * @example
-   * ```typescript
-   * const xm = new XmApi({
-   *   hostname: 'https://example.xmatters.com',
-   *   username: 'your-username',
-   *   password: 'your-password'
-   * });
-   *
-   * const { body: tokens } = await xm.oauth.obtainTokens({
-   *   clientId: 'your-client-id'
-   * });
-   * ```
+   * @param options - Optional parameters for token acquisition
+   * @param options.clientId - Client ID for password grant (skips discovery)
+   * @param options.clientSecret - Client secret for enhanced security (required for non-org clients)
+   * @returns Promise resolving to token response
    */
-  async obtainTokens(options: { clientId: string }): Promise<HttpResponse<TokenResponse>> {
-    const { clientId } = options;
-
-    // Get constructor credentials from RequestHandler
-    const constructorCredentials = this.http.getAuthCredentials();
-    if (!constructorCredentials) {
-      // Check if this is basic auth config with missing fields for more specific error messages
-      const validation = this.http.validateBasicAuthFields();
-      if (validation.hasBasicAuth) {
-        if (validation.missingField === 'username') {
-          throw new XmApiError(
-            'username is required for OAuth token acquisition. Provide it in the XmApi constructor.',
-          );
-        }
-        if (validation.missingField === 'password') {
-          throw new XmApiError(
-            'password is required for OAuth token acquisition. Provide it in the XmApi constructor.',
-          );
-        }
+  async obtainTokens(
+    options: { clientId?: string; clientSecret?: string } = {},
+  ): Promise<HttpResponse<OAuth2TokenResponse>> {
+    const authState = this.http.getCurrentAuthState();
+    switch (authState.type) {
+      case 'basic': {
+        return await this.getOAuthTokenByPassword(
+          { username: authState.username, password: authState.password },
+          options.clientId,
+          options.clientSecret,
+        );
       }
-      throw new XmApiError(
-        'XmApi must be initialized with basic auth credentials (username, password) to acquire OAuth tokens.',
-      );
+      case 'authCode': {
+        const clientSecret = options.clientSecret || authState.clientSecret;
+        return await this.getOAuthTokenByAuthorizationCode(
+          {
+            authorizationCode: authState.authorizationCode,
+            clientId: authState.clientId,
+          },
+          clientSecret,
+        );
+      }
+      case 'oauth': {
+        throw new XmApiError('Already have OAuth tokens - no need to call obtainTokens()');
+      }
+      default: {
+        // This should never happen due to config validation, but TypeScript requires it
+        throw new XmApiError('Invalid configuration type for token acquisition');
+      }
     }
-    const { username, password } = constructorCredentials;
+  }
 
-    // Validate that we have all required credentials
-    if (!clientId) {
-      throw new XmApiError(
-        'clientId is required for OAuth token acquisition. Provide it as a parameter to obtainTokens().',
-      );
-    }
-    const requestBody = new URLSearchParams({
-      grant_type: 'password',
-      client_id: clientId,
-      username,
-      password,
-    });
-    const response = await this.http.send<TokenResponse>({
-      method: 'POST',
+  /**
+   * Base method for making OAuth token requests.
+   * All OAuth flows use this common method.
+   *
+   * @param payload - Form-encoded payload for the token request
+   * @param clientId - Client ID for config transition
+   * @returns Promise resolving to token response
+   */
+  private async getOAuthToken(
+    payload: string,
+    clientId: string,
+  ): Promise<HttpResponse<OAuth2TokenResponse>> {
+    const response = await this.http.post<OAuth2TokenResponse>({
       path: '/oauth2/token',
+      body: payload,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
       },
-      body: requestBody.toString(),
-      skipAuth: true, // Don't add auth headers for token acquisition
+      skipAuth: true, // Don't add auth header for token requests
     });
-    const tokenData = response.body;
-
-    // Handle the newly acquired tokens
-    await this.http.handleNewTokens(tokenData, clientId);
-
+    // If successful, handle the new OAuth tokens (this also executes the token refresh callback)
+    await this.http.handleNewOAuthTokens(response.body, clientId);
     return response;
+  }
+
+  /**
+   * Performs OAuth2 password grant flow using basic auth credentials.
+   * Following the pattern: grant_type=password&client_id=...&username=...&password=...&client_secret=...
+   *
+   * @param credentials - Basic auth credentials (pure username/password)
+   * @param clientId - Client ID (if not provided, discovery would be attempted)
+   * @param clientSecret - Optional client secret for enhanced security
+   * @returns Promise resolving to token response
+   */
+  private async getOAuthTokenByPassword(
+    credentials: { username: string; password: string },
+    clientId?: string,
+    clientSecret?: string,
+  ): Promise<HttpResponse<OAuth2TokenResponse>> {
+    if (!clientId) {
+      throw new XmApiError(
+        'Client ID discovery not yet implemented - please provide explicit clientId',
+      );
+    }
+    let payload =
+      `grant_type=password&client_id=${clientId}&username=${credentials.username}&password=${credentials.password}`;
+    if (clientSecret) {
+      payload += `&client_secret=${clientSecret}`;
+    }
+    return await this.getOAuthToken(payload, clientId);
+  }
+
+  /**
+   * Performs OAuth2 authorization code flow.
+   * Following the pattern: grant_type=authorization_code&authorization_code=...&client_secret=...
+   *
+   * @param credentials - Auth code credentials with client ID
+   * @param clientSecret - Optional client secret (from config or obtainTokens params)
+   * @returns Promise resolving to token response
+   */
+  private async getOAuthTokenByAuthorizationCode(
+    credentials: { authorizationCode: string; clientId: string },
+    clientSecret?: string,
+  ): Promise<HttpResponse<OAuth2TokenResponse>> {
+    let payload =
+      `grant_type=authorization_code&authorization_code=${credentials.authorizationCode}`;
+    if (clientSecret) {
+      payload += `&client_secret=${clientSecret}`;
+    }
+    return await this.getOAuthToken(payload, credentials.clientId);
   }
 }
