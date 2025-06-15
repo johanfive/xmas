@@ -3,7 +3,7 @@ import type {
   GetOptions,
   RequestWithBodyOptions,
 } from './types/internal/methods.ts';
-import { RequestHandler } from './request-handler.ts';
+import type { RequestHandler } from './request-handler.ts';
 import { XmApiError } from './errors.ts';
 
 /**

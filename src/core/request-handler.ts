@@ -1,18 +1,23 @@
-import { HttpClient, HttpResponse } from './types/internal/http.ts';
+import type { HttpClient, HttpResponse } from './types/internal/http.ts';
 import {
   isAuthCodeConfig,
   isBasicAuthConfig,
   isOAuthConfig,
-  Logger,
-  TokenRefreshCallback,
-  XmApiConfig,
+  type Logger,
+  type TokenRefreshCallback,
+  type XmApiConfig,
 } from './types/internal/config.ts';
 import type { MutableAuthState } from './types/internal/auth-state.ts';
-import { DeleteOptions, GetOptions, RequestWithBodyOptions } from './types/internal/methods.ts';
+import type {
+  DeleteOptions,
+  GetOptions,
+  RequestWithBodyOptions,
+} from './types/internal/methods.ts';
 import { XmApiError } from './errors.ts';
-import { OAuth2TokenResponse } from './types/internal/oauth.ts';
-import { RequestBuilder, RequestBuildOptions } from './request-builder.ts';
+import type { OAuth2TokenResponse } from './types/internal/oauth.ts';
+import { RequestBuilder, type RequestBuildOptions } from './request-builder.ts';
 import { DefaultHttpClient, defaultLogger } from './defaults/index.ts';
+import denoJson from '../../deno.json' with { type: 'json' };
 
 export class RequestHandler {
   /** HTTP client for making requests */
@@ -65,6 +70,7 @@ export class RequestHandler {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'User-Agent': `xmas/${denoJson.version} (Deno)`,
       ...initialConfig.defaultHeaders,
     };
     this.requestBuilder = new RequestBuilder(initialConfig.hostname, headers);

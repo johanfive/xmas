@@ -1,4 +1,4 @@
-import { HttpClient, HttpRequest, HttpResponse } from '../types/internal/http.ts';
+import type { HttpClient, HttpRequest, HttpResponse } from '../types/internal/http.ts';
 
 export class DefaultHttpClient implements HttpClient {
   async send(request: HttpRequest): Promise<HttpResponse> {

@@ -1,11 +1,11 @@
 import { ResourceClient } from '../../core/resource-client.ts';
-import { RequestHandler } from '../../core/request-handler.ts';
+import type { RequestHandler } from '../../core/request-handler.ts';
 import type { HttpResponse } from '../../core/types/internal/http.ts';
 import type {
   EmptyHttpResponse,
   PaginatedHttpResponse,
 } from '../../core/types/endpoint/response.ts';
-import { GetGroupsParams, GetGroupsResponse, Group } from './types.ts';
+import type { GetGroupsParams, GetGroupsResponse, Group } from './types.ts';
 
 /**
  * Provides access to the groups endpoints of the xMatters API.

@@ -1,5 +1,5 @@
 import { expect } from 'https://deno.land/std@0.224.0/expect/mod.ts';
-import { RequestBuilder, RequestBuildOptions } from './request-builder.ts';
+import { RequestBuilder, type RequestBuildOptions } from './request-builder.ts';
 import { XmApiError } from './errors.ts';
 
 // Test helper to create RequestBuilder with standard configuration

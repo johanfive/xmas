@@ -131,3 +131,22 @@ Any chosen implementation must:
 2. Add new functionality behind feature flags or as opt-in
 3. Update documentation with examples
 4. Consider creating utilities to help migrate between approaches
+
+# exports
+
+Alternative Export Configurations If you want more granular control, you could use an object format
+instead:
+
+```json
+"exports": {
+  ".": "./src/index.ts",
+  "./types": "./src/core/types/index.ts"
+}
+```
+
+This would allow consumers to import like:
+
+```ts
+import { ... } from "@johanfive/xmas" (main export)
+import { ... } from "@johanfive/xmas/types" (types export)
+```

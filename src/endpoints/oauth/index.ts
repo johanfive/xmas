@@ -1,6 +1,6 @@
-import { RequestHandler } from '../../core/request-handler.ts';
-import { OAuth2TokenResponse } from '../../core/types/internal/oauth.ts';
-import { HttpResponse } from '../../core/types/internal/http.ts';
+import type { RequestHandler } from '../../core/request-handler.ts';
+import type { OAuth2TokenResponse } from '../../core/types/internal/oauth.ts';
+import type { HttpResponse } from '../../core/types/internal/http.ts';
 import { XmApiError } from '../../core/errors.ts';
 
 export class OAuthEndpoint {

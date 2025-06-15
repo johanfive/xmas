@@ -1,4 +1,4 @@
-import { HttpRequest } from './types/internal/http.ts';
+import type { HttpRequest } from './types/internal/http.ts';
 import { XmApiError } from './errors.ts';
 
 /**
