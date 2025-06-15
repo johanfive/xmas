@@ -10,9 +10,9 @@
  * - Tests both success and error scenarios comprehensively
  */
 
-import { expect } from 'https://deno.land/std@0.224.0/expect/mod.ts';
-import { FakeTime } from 'https://deno.land/std@0.224.0/testing/time.ts';
-import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts';
+import { expect } from 'std/expect/mod.ts';
+import { FakeTime } from 'std/testing/time.ts';
+import { stub } from 'std/testing/mock.ts';
 import { RequestHandler } from './request-handler.ts';
 import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
 import type { Logger, XmApiConfig } from './types/internal/config.ts';

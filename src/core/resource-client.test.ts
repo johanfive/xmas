@@ -1,4 +1,4 @@
-import { expect } from 'https://deno.land/std@0.224.0/expect/mod.ts';
+import { expect } from 'std/expect/mod.ts';
 import { ResourceClient } from './resource-client.ts';
 import { RequestHandler } from './request-handler.ts';
 import { XmApiError } from './errors.ts';

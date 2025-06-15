@@ -1,4 +1,4 @@
-import { expect } from 'https://deno.land/std@0.224.0/expect/mod.ts';
+import { expect } from 'std/expect/mod.ts';
 import { RequestBuilder, type RequestBuildOptions } from './request-builder.ts';
 import { XmApiError } from './errors.ts';
 

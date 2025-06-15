@@ -18,9 +18,9 @@
  * - Easy maintenance as it focuses on the interface contract
  */
 
-import { expect } from 'https://deno.land/std@0.224.0/expect/mod.ts';
-import { stub } from 'https://deno.land/std@0.224.0/testing/mock.ts';
-import { FakeTime } from 'https://deno.land/std@0.224.0/testing/time.ts';
+import { expect } from 'std/expect/mod.ts';
+import { stub } from 'std/testing/mock.ts';
+import { FakeTime } from 'std/testing/time.ts';
 
 import { GroupsEndpoint } from './index.ts';
 import { RequestHandler } from '../../core/request-handler.ts';
