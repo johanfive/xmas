@@ -146,14 +146,14 @@ export class RequestHandler {
   private createAuthHeader(): string | undefined {
     if (this.mutableAuthState.type === 'oauth') {
       return `Bearer ${this.mutableAuthState.accessToken}`;
-    } else if (this.mutableAuthState.type === 'basic') {
+    }
+    if (this.mutableAuthState.type === 'basic') {
       // In Deno, we use TextEncoder for proper UTF-8 encoding
       const encoder = new TextEncoder();
       const authString = `${this.mutableAuthState.username}:${this.mutableAuthState.password}`;
       const auth = btoa(String.fromCharCode(...encoder.encode(authString)));
       return `Basic ${auth}`;
     }
-    return undefined;
   }
 
   async send<T>(
@@ -225,7 +225,7 @@ export class RequestHandler {
       if (error instanceof XmApiError) {
         throw error;
       }
-      throw new XmApiError('Request failed', undefined, error);
+      throw new XmApiError('Request failed', null, error);
     }
   }
 

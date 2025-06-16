@@ -27,7 +27,7 @@ export class XmApiError extends Error {
       status: number;
       /** Response headers that may contain additional error context */
       headers: Record<string, string>;
-    },
+    } | null,
     public override readonly cause?: unknown,
   ) {
     // Use custom message if provided and meaningful, otherwise extract from response
