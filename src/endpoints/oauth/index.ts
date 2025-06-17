@@ -102,11 +102,13 @@ export class OAuthEndpoint {
         'Client ID discovery not yet implemented - please provide explicit clientId',
       );
     }
-    let payload =
-      `grant_type=password&client_id=${clientId}&username=${username}&password=${password}`;
-    if (clientSecret) {
-      payload += `&client_secret=${clientSecret}`;
-    }
+    const payload = this.buildFormData({
+      grant_type: 'password',
+      client_id: clientId,
+      username,
+      password,
+      client_secret: clientSecret,
+    });
     return await this.getOAuthToken({ payload, clientId });
   }
 
@@ -128,10 +130,28 @@ export class OAuthEndpoint {
     },
   ): Promise<HttpResponse<OAuth2TokenResponse>> {
     const { authorizationCode, clientId, clientSecret } = options;
-    let payload = `grant_type=authorization_code&authorization_code=${authorizationCode}`;
-    if (clientSecret) {
-      payload += `&client_secret=${clientSecret}`;
-    }
+    const payload = this.buildFormData({
+      grant_type: 'authorization_code',
+      authorization_code: authorizationCode,
+      client_secret: clientSecret,
+    });
     return await this.getOAuthToken({ payload, clientId });
+  }
+
+  /**
+   * Builds form-encoded payload using URLSearchParams for proper URL encoding.
+   * Only includes parameters that have defined values.
+   *
+   * @param params - Key-value pairs for the form data
+   * @returns URL-encoded form data string
+   */
+  private buildFormData(params: Record<string, string | undefined>): string {
+    const formData = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) {
+        formData.set(key, value);
+      }
+    });
+    return formData.toString();
   }
 }
