@@ -54,7 +54,6 @@ export class RequestHandler {
         accessToken: initialConfig.accessToken,
         refreshToken: initialConfig.refreshToken,
         clientId: initialConfig.clientId,
-        expiresAt: initialConfig.expiresAt,
       };
     } else if (isAuthCodeConfig(initialConfig)) {
       this.mutableAuthState = {
@@ -234,7 +233,8 @@ export class RequestHandler {
       accessToken: tokenResponse.access_token,
       refreshToken: tokenResponse.refresh_token,
       clientId: clientId,
-      expiresAt: new Date(Date.now() + (tokenResponse.expires_in * 1000)).toISOString(),
+      expiresInSeconds: tokenResponse.expires_in,
+      tokenIssuedAtMs: Date.now(),
     };
     await this.executeTokenRefreshCallback(tokenResponse.access_token, tokenResponse.refresh_token);
   }
@@ -260,11 +260,17 @@ export class RequestHandler {
 
   private isTokenExpired(): boolean {
     if (this.mutableAuthState.type !== 'oauth') return false;
-    // If there's no expiration info, assume it's valid
-    if (!this.mutableAuthState.expiresAt) return false;
-    const expiresAt = new Date(this.mutableAuthState.expiresAt);
-    // Consider token expired if it expires in less than 30 seconds
-    return expiresAt.getTime() - Date.now() <= 30 * 1000;
+    // If we don't have expiration info, assume it's valid
+    // since consumers likely cache tokens and we don't want to
+    // prematurely refresh tokens that are probably still good.
+    if (!this.mutableAuthState.expiresInSeconds || !this.mutableAuthState.tokenIssuedAtMs) {
+      return false;
+    }
+    // Calculate how long the token has been alive (in seconds)
+    const tokenElapsedSeconds = (Date.now() - this.mutableAuthState.tokenIssuedAtMs) / 1000;
+    // Consider token expired if it's within the buffer period of expiry
+    const bufferSeconds = 30;
+    return tokenElapsedSeconds >= (this.mutableAuthState.expiresInSeconds - bufferSeconds);
   }
 
   private exponentialBackoff(attempt: number): number {

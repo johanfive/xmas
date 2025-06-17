@@ -316,7 +316,7 @@ Deno.test('RequestHandler', async (t) => {
       expect(thrownError).toBeInstanceOf(XmApiError);
       const xmError = thrownError as XmApiError;
       expect(xmError.message).toBe('Request failed');
-      expect(xmError.response).toBeUndefined();
+      expect(xmError.response).toBeNull();
       expect(xmError.cause).toBeInstanceOf(Error);
       expect((xmError.cause as Error).message).toBe('Network error');
     } finally {

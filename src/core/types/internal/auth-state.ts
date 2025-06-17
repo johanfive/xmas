@@ -15,5 +15,6 @@ export type MutableAuthState =
     accessToken: string;
     refreshToken: string;
     clientId: string;
-    expiresAt?: string;
+    expiresInSeconds?: number; // Original seconds from API response
+    tokenIssuedAtMs?: number; // Date.now() when token was received
   };

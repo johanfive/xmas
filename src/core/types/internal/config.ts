@@ -64,7 +64,6 @@ export interface OAuthConfig extends XmApiBaseConfig {
   accessToken: string;
   refreshToken: string;
   clientId: string;
-  expiresAt?: string; // ISO timestamp when the access token expires
 }
 
 /**

@@ -327,7 +327,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(thrownError).toBeInstanceOf(XmApiError);
       const xmError = thrownError as XmApiError;
       expect(xmError.message).toBe('Request failed'); // Generic message for network errors
-      expect(xmError.response).toBeUndefined(); // No response for network errors
+      expect(xmError.response).toBeNull(); // No response for network errors
     } finally {
       sendStub.restore();
     }
