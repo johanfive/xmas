@@ -17,25 +17,3 @@ export interface OAuth2TokenResponse {
   /** The type of token, typically 'Bearer' */
   token_type: 'Bearer' | string;
 }
-
-/**
- * Basic token data required for OAuth2 authentication.
- */
-interface TokenData {
-  /** Token to use for authenticating requests */
-  accessToken: string;
-  /** Token to use for getting a new access token */
-  refreshToken: string;
-  /** Client ID used for OAuth2 server authentication */
-  clientId: string;
-}
-
-/**
- * Data structure for managing OAuth2 tokens with metadata and helper methods.
- */
-export interface TokenState extends TokenData {
-  /** ISO timestamp when the access token expires */
-  expiresAt: string;
-  /** Scopes granted to the token */
-  scopes: string[];
-}
