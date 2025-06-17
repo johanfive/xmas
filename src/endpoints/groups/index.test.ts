@@ -495,7 +495,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         // Should be: initial request log + retry message + retry request log = 3 calls
         expect(debugStub.calls.length).toBe(3);
         expect(debugStub.calls[1].args[0]).toBe(
-          'Request failed with status 429, retrying in 2000ms (attempt 1/3)',
+          'DEBUG: Request failed with status 429, retrying in 2000ms (attempt 1/3)',
         );
       } finally {
         sendStub.restore();
@@ -557,7 +557,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         // Should be: initial request log + retry message + retry request log = 3 calls
         expect(debugStub.calls.length).toBe(3);
         expect(debugStub.calls[1].args[0]).toBe(
-          'Request failed with status 503, retrying in 1000ms (attempt 1/3)',
+          'DEBUG: Request failed with status 503, retrying in 1000ms (attempt 1/3)',
         );
       } finally {
         sendStub.restore();
@@ -700,7 +700,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       expect(sendStub.calls.length).toBe(1);
       expect(thrownError).toBeInstanceOf(XmApiError);
       const xmError = thrownError as XmApiError;
-      expect(xmError.message).toBe('Request failed with status 400');
+      expect(xmError.message).toBe('DEBUG: Request failed with status 400');
       expect(xmError.response?.status).toBe(400);
       expect(xmError.response?.body).toBe('');
     } finally {

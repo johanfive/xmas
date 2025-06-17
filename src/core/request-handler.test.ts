@@ -445,7 +445,7 @@ Deno.test('RequestHandler', async (t) => {
         // Should be: initial request log + retry message + retry request log = 3 calls
         expect(debugStub.calls.length).toBe(3);
         expect(debugStub.calls[1].args[0]).toBe(
-          'Request failed with status 429, retrying in 1000ms (attempt 1/3)',
+          'DEBUG: Request failed with status 429, retrying in 1000ms (attempt 1/3)',
         );
       } finally {
         debugStub.restore();
@@ -610,7 +610,7 @@ Deno.test('RequestHandler', async (t) => {
         // Should be: initial request log + retry message + retry request log = 3 calls
         expect(debugStub.calls.length).toBe(3);
         expect(debugStub.calls[1].args[0]).toBe(
-          'Request failed with status 503, retrying in 1000ms (attempt 1/3)',
+          'DEBUG: Request failed with status 503, retrying in 1000ms (attempt 1/3)',
         );
       } finally {
         debugStub.restore();
@@ -657,7 +657,7 @@ Deno.test('RequestHandler', async (t) => {
         // Should be: initial request log + retry message + retry request log = 3 calls
         expect(debugStub.calls.length).toBe(3);
         expect(debugStub.calls[1].args[0]).toBe(
-          'Request failed with status 429, retrying in 5000ms (attempt 1/3)',
+          'DEBUG: Request failed with status 429, retrying in 5000ms (attempt 1/3)',
         );
       } finally {
         debugStub.restore();

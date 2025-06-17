@@ -3,6 +3,8 @@ const {
   USERNAME,
   PASSWORD,
   CLIENT_ID,
+  EXPIRED_ACCESS_TOKEN,
+  REFRESH_TOKEN,
 } = Deno.env.toObject();
 
 // Various configuration options to initiate the SDK with
@@ -23,8 +25,8 @@ const oauth = {
   byRefreshToken: {
     hostname: HOSTNAME,
     clientId: CLIENT_ID,
-    accessToken: 'TODO',
-    refreshToken: 'TODO',
+    accessToken: EXPIRED_ACCESS_TOKEN,
+    refreshToken: REFRESH_TOKEN,
   },
 };
 

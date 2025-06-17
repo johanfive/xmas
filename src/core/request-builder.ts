@@ -13,29 +13,23 @@ export interface RequestBuildOptions {
    * @example "/people"
    */
   path?: string;
-
   /**
-   * A complete URL to an external endpoint.
-   * Use this when you need to bypass the xMatters API completely.
+   * A fully qualified URL.
+   * Use to bypass URL building logic entirely.
    * @example "https://api.external-service.com/v2/endpoint"
+   * @example "https://you.xmatters.com/api/integration/1/functions/6358eaf3-6213-42fc-8629-e823cf5739cb/triggers?apiKey=a12bcde3-456f-7g89-123a-b456789cd000"
    */
   fullUrl?: string;
-
   /** The HTTP method to use for the request */
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-
   /** Optional headers to send with the request */
   headers?: Record<string, string>;
-
   /** Optional query parameters to include in the URL */
   query?: Record<string, unknown>;
-
   /** Optional request body */
   body?: unknown;
-
   /** Used internally for retry logic */
   retryAttempt?: number;
-
   /** Whether to skip adding authentication headers to this request */
   skipAuth?: boolean;
 }
@@ -50,13 +44,11 @@ export class RequestBuilder {
 
   build(options: RequestBuildOptions): HttpRequest {
     let url: URL;
-
     if (options.fullUrl && options.path) {
       throw new XmApiError(
         'Cannot specify both fullUrl and path. Use fullUrl for external endpoints, path for xMatters API endpoints.',
       );
     }
-
     if (options.fullUrl) {
       url = new URL(options.fullUrl);
     } else if (options.path) {
@@ -67,8 +59,6 @@ export class RequestBuilder {
     } else {
       throw new XmApiError('Either path or fullUrl must be provided');
     }
-
-    // Add query parameters if present in the options
     if (options.query) {
       Object.entries(options.query).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -76,10 +66,8 @@ export class RequestBuilder {
         }
       });
     }
-
     // Build headers by merging default headers with request-specific headers
     const headers: Record<string, string> = { ...this.defaultHeaders, ...options.headers };
-
     const builtRequest: HttpRequest = {
       method: options.method || 'GET',
       url: url.toString(),
@@ -87,7 +75,6 @@ export class RequestBuilder {
       body: options.body,
       retryAttempt: options.retryAttempt || 0,
     };
-
     return builtRequest;
   }
 }

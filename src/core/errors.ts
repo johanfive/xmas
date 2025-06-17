@@ -55,7 +55,7 @@ export class XmApiError extends Error {
     status: number;
   }): string {
     // Default fallback message
-    const defaultMessage = `Request failed with status ${response.status}`;
+    const defaultMessage = `DEBUG: Request failed with status ${response.status}`;
 
     // If no response body, use default
     if (!response.body) {
@@ -69,7 +69,7 @@ export class XmApiError extends Error {
     }
 
     // If response body is not an object, use default
-    if (typeof response.body !== 'object') {
+    if (typeof response.body !== 'object' || Array.isArray(response.body)) {
       return defaultMessage;
     }
 

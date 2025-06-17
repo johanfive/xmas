@@ -7,38 +7,6 @@ import { OAuthEndpoint } from './endpoints/oauth/index.ts';
 /**
  * Main entry point for the xMatters API client.
  * This class provides access to all API endpoints through its properties.
- *
- * @example Basic Authentication
- * ```typescript
- * const xm = new XmApi({
- *   hostname: 'https://example.xmatters.com',
- *   username: 'your-username',
- *   password: 'your-password',
- *   // Optional configurations
- *   httpClient: myCustomHttpClient,
- *   logger: myCustomLogger,
- *   defaultHeaders: { 'Custom-Header': 'value' },
- *   maxRetries: 3,
- * });
- * ```
- *
- * @example OAuth Authentication (with existing tokens)
- * ```typescript
- * const xm = new XmApi({
- *   hostname: 'https://example.xmatters.com',
- *   accessToken: 'your-access-token',
- *   refreshToken: 'your-refresh-token',
- *   clientId: 'your-client-id',
- *   // Optional configurations
- *   httpClient: myCustomHttpClient,
- *   logger: myCustomLogger,
- *   defaultHeaders: { 'Custom-Header': 'value' },
- *   maxRetries: 3,
- *   onTokenRefresh: (accessToken, refreshToken) => {
- *     // Store the new tokens
- *   },
- * });
- * ```
  */
 export class XmApi {
   /** HTTP handler that manages all API requests */

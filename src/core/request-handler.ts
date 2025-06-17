@@ -76,86 +76,6 @@ export class RequestHandler {
     this.requestBuilder = new RequestBuilder(initialConfig.hostname, headers);
   }
 
-  /**
-   * Execute the onTokenRefresh callback if provided (with error handling)
-   */
-  private async executeTokenRefreshCallback(
-    accessToken: string,
-    refreshToken: string,
-  ): Promise<void> {
-    if (this.onTokenRefresh) {
-      try {
-        await this.onTokenRefresh(accessToken, refreshToken);
-      } catch (error) {
-        this.logger.warn(
-          'Error in onTokenRefresh callback, but continuing with refreshed token',
-          error,
-        );
-      }
-    }
-  }
-
-  private isTokenExpired(): boolean {
-    if (this.mutableAuthState.type !== 'oauth') return false;
-    // If there's no expiration info, assume it's valid
-    if (!this.mutableAuthState.expiresAt) return false;
-    const expiresAt = new Date(this.mutableAuthState.expiresAt);
-    // Consider token expired if it expires in less than 30 seconds
-    return expiresAt.getTime() - Date.now() <= 30 * 1000;
-  }
-
-  private async refreshToken(): Promise<void> {
-    try {
-      if (this.mutableAuthState.type !== 'oauth') {
-        throw new XmApiError('No OAuth configuration available for token refresh');
-      }
-      const params = new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: this.mutableAuthState.refreshToken,
-        client_id: this.mutableAuthState.clientId,
-      });
-      const refreshRequest = this.requestBuilder.build({
-        method: 'POST',
-        path: '/oauth2/token',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json',
-        },
-        body: params.toString(),
-      });
-      const response = await this.client.send(refreshRequest);
-      if (response.status < 200 || response.status >= 300) {
-        throw new XmApiError('Failed to refresh token', response);
-      }
-      const tokenResponse = response.body as OAuth2TokenResponse;
-      await this.handleNewOAuthTokens(tokenResponse, this.mutableAuthState.clientId);
-    } catch (error) {
-      this.logger.error('Failed to refresh token:', error);
-      throw error;
-    }
-  }
-
-  private exponentialBackoff(attempt: number): number {
-    // Calculate delay with exponential backoff: 1s, 2s, 4s, 8s, capped at 10s
-    return Math.min(1000 * Math.pow(2, attempt), 10000);
-  }
-
-  /**
-   * Creates the authorization header value based on the authentication type
-   */
-  private createAuthHeader(): string | undefined {
-    if (this.mutableAuthState.type === 'oauth') {
-      return `Bearer ${this.mutableAuthState.accessToken}`;
-    }
-    if (this.mutableAuthState.type === 'basic') {
-      // In Deno, we use TextEncoder for proper UTF-8 encoding
-      const encoder = new TextEncoder();
-      const authString = `${this.mutableAuthState.username}:${this.mutableAuthState.password}`;
-      const auth = btoa(String.fromCharCode(...encoder.encode(authString)));
-      return `Basic ${auth}`;
-    }
-  }
-
   async send<T>(
     request: RequestBuildOptions,
   ): Promise<HttpResponse<T>> {
@@ -208,7 +128,7 @@ export class RequestHandler {
             }
           }
           this.logger.debug(
-            `Request failed with status ${response.status}, retrying in ${finalDelay}ms (attempt ${
+            `DEBUG: Request failed with status ${response.status}, retrying in ${finalDelay}ms (attempt ${
               currentAttempt + 1
             }/${this.maxRetries})`,
           );
@@ -250,6 +170,56 @@ export class RequestHandler {
   }
 
   /**
+   * Creates the authorization header value based on the authentication type
+   */
+  private createAuthHeader(): string | undefined {
+    if (this.mutableAuthState.type === 'oauth') {
+      return `Bearer ${this.mutableAuthState.accessToken}`;
+    }
+    if (this.mutableAuthState.type === 'basic') {
+      // In Deno, we use TextEncoder for proper UTF-8 encoding
+      const encoder = new TextEncoder();
+      const authString = `${this.mutableAuthState.username}:${this.mutableAuthState.password}`;
+      const auth = btoa(String.fromCharCode(...encoder.encode(authString)));
+      return `Basic ${auth}`;
+    }
+  }
+
+  private async refreshToken(): Promise<void> {
+    try {
+      if (this.mutableAuthState.type !== 'oauth') {
+        throw new XmApiError('No OAuth configuration available for token refresh');
+      }
+      const params = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: this.mutableAuthState.refreshToken,
+        client_id: this.mutableAuthState.clientId,
+      });
+      const refreshRequest = this.requestBuilder.build({
+        method: 'POST',
+        path: '/oauth2/token',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+        },
+        body: params.toString(),
+      });
+      this.logger.debug(
+        `DEBUG: Refreshing token for client ${this.mutableAuthState.clientId}`,
+      );
+      const response = await this.client.send(refreshRequest);
+      if (response.status < 200 || response.status >= 300) {
+        throw new XmApiError('Failed to refresh token', response);
+      }
+      const tokenResponse = response.body as OAuth2TokenResponse;
+      await this.handleNewOAuthTokens(tokenResponse, this.mutableAuthState.clientId);
+    } catch (error) {
+      this.logger.error('Failed to refresh token:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Handles newly acquired or refreshed OAuth tokens.
    * This method processes token responses from any source and updates the authentication state:
    * - OAuth endpoint responses (password grant, authorization code grant)
@@ -267,6 +237,39 @@ export class RequestHandler {
       expiresAt: new Date(Date.now() + (tokenResponse.expires_in * 1000)).toISOString(),
     };
     await this.executeTokenRefreshCallback(tokenResponse.access_token, tokenResponse.refresh_token);
+  }
+
+  /**
+   * Execute the onTokenRefresh callback if provided (with error handling)
+   */
+  private async executeTokenRefreshCallback(
+    accessToken: string,
+    refreshToken: string,
+  ): Promise<void> {
+    if (this.onTokenRefresh) {
+      try {
+        await this.onTokenRefresh(accessToken, refreshToken);
+      } catch (error) {
+        this.logger.warn(
+          'Error in onTokenRefresh callback, but continuing with refreshed token',
+          error,
+        );
+      }
+    }
+  }
+
+  private isTokenExpired(): boolean {
+    if (this.mutableAuthState.type !== 'oauth') return false;
+    // If there's no expiration info, assume it's valid
+    if (!this.mutableAuthState.expiresAt) return false;
+    const expiresAt = new Date(this.mutableAuthState.expiresAt);
+    // Consider token expired if it expires in less than 30 seconds
+    return expiresAt.getTime() - Date.now() <= 30 * 1000;
+  }
+
+  private exponentialBackoff(attempt: number): number {
+    // Calculate delay with exponential backoff: 1s, 2s, 4s, 8s, capped at 10s
+    return Math.min(1000 * Math.pow(2, attempt), 10000);
   }
 
   /**
