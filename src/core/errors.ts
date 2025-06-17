@@ -34,14 +34,18 @@ export class XmApiError extends Error {
     const finalMessage = (message && message.trim())
       ? message
       : (response ? XmApiError.extractErrorMessage(response) : message);
-    super(finalMessage);
+
+    // Pass cause to parent Error constructor using the standard format
+    // to preserve the original error context for complete stack traces
+    super(finalMessage, cause ? { cause } : undefined);
     this.name = 'XmApiError';
 
     // Ensure proper prototype chain for instanceof checks
     Object.setPrototypeOf(this, XmApiError.prototype);
 
-    // Capture stack trace
-    if (Error.captureStackTrace) {
+    // Only capture a new stack trace if we don't have a cause
+    // When we have a cause, we want to preserve the original stack trace
+    if (!cause && Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);
     }
   }

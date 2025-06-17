@@ -631,7 +631,7 @@ Deno.test('GroupsEndpoint', async (t) => {
   });
 
   await t.step('logs error when token refresh fails', async () => {
-    const { mockHttpClient, mockLogger, endpoint } = createEndpointTestSetup({
+    const { mockHttpClient, endpoint } = createEndpointTestSetup({
       accessToken: 'expired-token',
       refreshToken: 'invalid-refresh-token',
       clientId: 'test-client-id',
@@ -660,7 +660,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       // Otherwise it's the main API request
       return Promise.resolve(unauthorizedResponse);
     });
-    const errorStub = stub(mockLogger, 'error', () => {});
+
     try {
       let thrownError: unknown;
       try {
@@ -670,12 +670,13 @@ Deno.test('GroupsEndpoint', async (t) => {
       }
       expect(thrownError).toBeInstanceOf(XmApiError);
       expect(sendStub.calls.length).toBe(2); // initial request (401), failed token refresh
-      expect(errorStub.calls.length).toBe(1);
-      expect(errorStub.calls[0].args[0]).toBe('Failed to refresh token:');
-      expect(errorStub.calls[0].args[1]).toBeInstanceOf(XmApiError);
+
+      // Verify error details are correct
+      const xmError = thrownError as XmApiError;
+      expect(xmError.message).toBe('Failed to refresh token');
+      expect(xmError.response?.status).toBe(400);
     } finally {
       sendStub.restore();
-      errorStub.restore();
     }
   });
 

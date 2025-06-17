@@ -213,8 +213,10 @@ export class RequestHandler {
       const tokenResponse = response.body as OAuth2TokenResponse;
       await this.handleNewOAuthTokens(tokenResponse, this.mutableAuthState.clientId);
     } catch (error) {
-      this.logger.error('Failed to refresh token:', error);
-      throw error;
+      if (error instanceof XmApiError) {
+        throw error;
+      }
+      throw new XmApiError('Failed to refresh token', null, error);
     }
   }
 

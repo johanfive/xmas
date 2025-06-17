@@ -7,7 +7,16 @@
  * - Uses try/finally blocks to ensure proper cleanup of stubs
  * - Creates mock data objects for reusable test responses
  * - Follows descriptive test step naming conventions
- * - Tests both success and error scenarios comprehensively
+ * - Test  await t.step('logs error when token refresh fails', async () => {
+    const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
+      accessToken: 'expired-token',
+      refreshToken: 'invalid-refresh-token',
+      clientId: 'test-client-id',
+      responses: [
+        mockUnauthorizedResponse,
+        { status: 400, headers: {}, body: { error: 'invalid_grant' } },
+      ],
+    });cess and error scenarios comprehensively
  */
 
 import { expect } from 'std/expect/mod.ts';
@@ -456,7 +465,7 @@ Deno.test('RequestHandler', async (t) => {
   });
 
   await t.step('logs error when token refresh fails', async () => {
-    const { mockHttpClient, requestHandler, mockLogger } = createRequestHandlerTestSetup({
+    const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
       accessToken: 'expired-token',
       refreshToken: 'invalid-refresh-token',
       clientId: 'test-client-id',
@@ -465,9 +474,6 @@ Deno.test('RequestHandler', async (t) => {
         { status: 400, headers: {}, body: { error: 'invalid_grant' } },
       ],
     });
-
-    // Stub the error method to capture calls
-    const errorStub = stub(mockLogger, 'error', () => {});
 
     try {
       let thrownError: unknown;
@@ -480,12 +486,11 @@ Deno.test('RequestHandler', async (t) => {
       expect(thrownError).toBeInstanceOf(XmApiError);
       expect(mockHttpClient.requests.length).toBe(2); // Initial 401 + failed token refresh
 
-      // Verify error logger was called
-      expect(errorStub.calls.length).toBe(1);
-      expect(errorStub.calls[0].args[0]).toBe('Failed to refresh token:');
-      expect(errorStub.calls[0].args[1]).toBeInstanceOf(XmApiError);
+      // Verify error details are correct
+      const xmError = thrownError as XmApiError;
+      expect(xmError.message).toBe('Failed to refresh token');
+      expect(xmError.response?.status).toBe(400);
     } finally {
-      errorStub.restore();
       mockHttpClient.reset();
     }
   });
@@ -537,7 +542,7 @@ Deno.test('RequestHandler', async (t) => {
   });
 
   await t.step('throws error when token refresh returns non-200 status', async () => {
-    const { mockHttpClient, requestHandler, mockLogger } = createRequestHandlerTestSetup({
+    const { mockHttpClient, requestHandler } = createRequestHandlerTestSetup({
       accessToken: 'expired-token',
       refreshToken: 'invalid-refresh-token',
       clientId: 'test-client-id',
@@ -546,9 +551,6 @@ Deno.test('RequestHandler', async (t) => {
         { status: 401, headers: {}, body: { error: 'invalid_client' } },
       ],
     });
-
-    // Stub the error method to capture calls
-    const errorStub = stub(mockLogger, 'error', () => {});
 
     try {
       let thrownError: unknown;
@@ -562,13 +564,7 @@ Deno.test('RequestHandler', async (t) => {
       const xmError = thrownError as XmApiError;
       expect(xmError.message).toBe('Failed to refresh token');
       expect(xmError.response?.status).toBe(401);
-
-      // Verify error logger was called
-      expect(errorStub.calls.length).toBe(1);
-      expect(errorStub.calls[0].args[0]).toBe('Failed to refresh token:');
-      expect(errorStub.calls[0].args[1]).toBeInstanceOf(XmApiError);
     } finally {
-      errorStub.restore();
       mockHttpClient.reset();
     }
   });
