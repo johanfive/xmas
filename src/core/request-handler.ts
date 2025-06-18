@@ -1,4 +1,4 @@
-import type { HttpClient, HttpResponse } from './types/internal/http.ts';
+import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
 import {
   isAuthCodeConfig,
   isBasicAuthConfig,
@@ -80,7 +80,7 @@ export class RequestHandler {
   ): Promise<HttpResponse<T>> {
     // Check if token refresh is needed before making the request
     if (this.mutableAuthState.type === 'oauth' && this.isTokenExpired()) {
-      await this.refreshToken();
+      await this.refreshAccessToken();
     }
     const fullRequest = this.requestBuilder.build(request);
     // Add authorization header unless explicitly skipped
@@ -94,8 +94,7 @@ export class RequestHandler {
       }
     }
     try {
-      this.logger.debug(`DEBUG: Sending request: ${fullRequest.method} ${fullRequest.url}`);
-      const response = await this.client.send(fullRequest);
+      const response = await this.sendWithLogging(fullRequest);
       if (response.status >= 400) {
         const currentAttempt = fullRequest.retryAttempt ?? 0;
         // Handle OAuth token expiry/refresh first
@@ -104,7 +103,7 @@ export class RequestHandler {
           this.mutableAuthState.type === 'oauth' &&
           currentAttempt === 0
         ) {
-          await this.refreshToken();
+          await this.refreshAccessToken();
           // Retry the original request with new token
           return this.send<T>({
             ...request,
@@ -127,7 +126,7 @@ export class RequestHandler {
             }
           }
           this.logger.debug(
-            `DEBUG: Request failed with status ${response.status}, retrying in ${finalDelay}ms (attempt ${
+            `Request failed with status ${response.status}, retrying in ${finalDelay}ms (attempt ${
               currentAttempt + 1
             }/${this.maxRetries})`,
           );
@@ -169,6 +168,21 @@ export class RequestHandler {
   }
 
   /**
+   * Sends an HTTP request with logging.
+   * This wrapper ensures consistent logging across all HTTP calls.
+   */
+  private async sendWithLogging(
+    request: HttpRequest,
+  ): Promise<HttpResponse> {
+    const startTime = Date.now();
+    this.logger.debug(`--> ${request.method} ${request.url}`);
+    const response = await this.client.send(request);
+    const duration = Date.now() - startTime;
+    this.logger.debug(`<-- ${response.status} (${duration}ms)`);
+    return response;
+  }
+
+  /**
    * Creates the authorization header value based on the authentication type
    */
   private createAuthHeader(): string | undefined {
@@ -184,7 +198,7 @@ export class RequestHandler {
     }
   }
 
-  private async refreshToken(): Promise<void> {
+  private async refreshAccessToken(): Promise<void> {
     try {
       if (this.mutableAuthState.type !== 'oauth') {
         throw new XmApiError('No OAuth configuration available for token refresh');
@@ -204,9 +218,9 @@ export class RequestHandler {
         body: params.toString(),
       });
       this.logger.debug(
-        `DEBUG: Refreshing token for client ${this.mutableAuthState.clientId}`,
+        `Refreshing token for client ${this.mutableAuthState.clientId}`,
       );
-      const response = await this.client.send(refreshRequest);
+      const response = await this.sendWithLogging(refreshRequest);
       if (response.status < 200 || response.status >= 300) {
         throw new XmApiError('Failed to refresh token', response);
       }

@@ -451,10 +451,16 @@ Deno.test('RequestHandler', async (t) => {
         expect(mockHttpClient.requests.length).toBe(2);
 
         // Verify debug logger was called with correct retry message
-        // Should be: initial request log + retry message + retry request log = 3 calls
-        expect(debugStub.calls.length).toBe(3);
-        expect(debugStub.calls[1].args[0]).toBe(
-          'DEBUG: Request failed with status 429, retrying in 1000ms (attempt 1/3)',
+        // Should be:
+        // initial request -->
+        // + initial request <--
+        // + retry message
+        // + retry request -->
+        // + retry request <--
+        // = 5 calls
+        expect(debugStub.calls.length).toBe(5);
+        expect(debugStub.calls[2].args[0]).toBe(
+          'Request failed with status 429, retrying in 1000ms (attempt 1/3)',
         );
       } finally {
         debugStub.restore();
@@ -603,10 +609,16 @@ Deno.test('RequestHandler', async (t) => {
         expect(mockHttpClient.requests.length).toBe(2);
 
         // Verify debug logger was called with exponential backoff message
-        // Should be: initial request log + retry message + retry request log = 3 calls
-        expect(debugStub.calls.length).toBe(3);
-        expect(debugStub.calls[1].args[0]).toBe(
-          'DEBUG: Request failed with status 503, retrying in 1000ms (attempt 1/3)',
+        // Should be:
+        // initial request -->
+        // + initial request <--
+        // + retry message
+        // + retry request -->
+        // + retry request <--
+        // = 5 calls
+        expect(debugStub.calls.length).toBe(5);
+        expect(debugStub.calls[2].args[0]).toBe(
+          'Request failed with status 503, retrying in 1000ms (attempt 1/3)',
         );
       } finally {
         debugStub.restore();
@@ -650,10 +662,16 @@ Deno.test('RequestHandler', async (t) => {
         expect(mockHttpClient.requests.length).toBe(2);
 
         // Verify debug logger was called with Retry-After header value
-        // Should be: initial request log + retry message + retry request log = 3 calls
-        expect(debugStub.calls.length).toBe(3);
-        expect(debugStub.calls[1].args[0]).toBe(
-          'DEBUG: Request failed with status 429, retrying in 5000ms (attempt 1/3)',
+        // Should be:
+        // initial request -->
+        // + initial request <--
+        // + retry message
+        // + retry request -->
+        // + retry request <--
+        // = 5 calls
+        expect(debugStub.calls.length).toBe(5);
+        expect(debugStub.calls[2].args[0]).toBe(
+          'Request failed with status 429, retrying in 5000ms (attempt 1/3)',
         );
       } finally {
         debugStub.restore();

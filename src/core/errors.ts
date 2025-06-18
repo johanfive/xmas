@@ -59,39 +59,31 @@ export class XmApiError extends Error {
     status: number;
   }): string {
     // Default fallback message
-    const defaultMessage = `DEBUG: Request failed with status ${response.status}`;
-
+    const defaultMessage = `Request failed with status ${response.status}`;
     // If no response body, use default
     if (!response.body) {
       return defaultMessage;
     }
-
     // If response body is a string, use it directly if it's not empty
     if (typeof response.body === 'string') {
       const trimmed = response.body.trim();
       return trimmed || defaultMessage;
     }
-
     // If response body is not an object, use default
     if (typeof response.body !== 'object' || Array.isArray(response.body)) {
       return defaultMessage;
     }
-
     const body = response.body as Record<string, unknown>;
-
     // xMatters API typically uses 'reason' for error type and 'message' for details
     const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
     const message = typeof body.message === 'string' ? body.message.trim() : '';
-
     // If we have both reason and message, combine them
     if (reason && message) {
       return `${reason}: ${message}`;
     }
-
     // If we only have one, use it
     if (reason) return reason;
     if (message) return message;
-
     // Fall back to default message
     return defaultMessage;
   }
