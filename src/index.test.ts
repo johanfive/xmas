@@ -25,6 +25,7 @@ Deno.test('XmApi - Basic Auth Integration', async () => {
         'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=', // base64 of testuser:testpass
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'User-Agent': 'xmas/0.0.1 (Deno)',
       },
     },
     mockedResponse: {
@@ -62,6 +63,7 @@ Deno.test('XmApi - OAuth Token Integration', async () => {
         'Authorization': 'Bearer test-access-token',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'User-Agent': 'xmas/0.0.1 (Deno)',
       },
     },
     mockedResponse: {
@@ -106,6 +108,9 @@ Deno.test('XmApi - Token Refresh on 401', async () => {
         url: 'https://test.xmatters.com/api/xm/1/groups',
         headers: {
           'Authorization': 'Bearer expired-token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'xmas/0.0.1 (Deno)',
         },
       },
       mockedResponse: {
@@ -122,6 +127,7 @@ Deno.test('XmApi - Token Refresh on 401', async () => {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Accept': 'application/json',
+          'User-Agent': 'xmas/0.0.1 (Deno)',
         },
         body: 'grant_type=refresh_token&refresh_token=valid-refresh-token&client_id=test-client-id',
       },
@@ -143,6 +149,9 @@ Deno.test('XmApi - Token Refresh on 401', async () => {
         url: 'https://test.xmatters.com/api/xm/1/groups',
         headers: {
           'Authorization': 'Bearer new-access-token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'xmas/0.0.1 (Deno)',
         },
       },
       mockedResponse: {
@@ -185,6 +194,9 @@ Deno.test('XmApi - Token Refresh Callback Error Handling', async () => {
         url: 'https://test.xmatters.com/api/xm/1/groups',
         headers: {
           'Authorization': 'Bearer expired-token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'xmas/0.0.1 (Deno)',
         },
       },
       mockedResponse: {
@@ -198,6 +210,12 @@ Deno.test('XmApi - Token Refresh Callback Error Handling', async () => {
       expectedRequest: {
         method: 'POST',
         url: 'https://test.xmatters.com/api/xm/1/oauth2/token',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+          'User-Agent': 'xmas/0.0.1 (Deno)',
+        },
+        body: 'grant_type=refresh_token&refresh_token=valid-refresh-token&client_id=test-client-id',
       },
       mockedResponse: {
         status: 200,
@@ -217,6 +235,9 @@ Deno.test('XmApi - Token Refresh Callback Error Handling', async () => {
         url: 'https://test.xmatters.com/api/xm/1/groups',
         headers: {
           'Authorization': 'Bearer new-access-token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'xmas/0.0.1 (Deno)',
         },
       },
       mockedResponse: {
@@ -257,6 +278,12 @@ Deno.test('XmApi - Retry Logic for 429 Rate Limit', async () => {
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
+          headers: {
+            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'xmas/0.0.1 (Deno)',
+          },
         },
         mockedResponse: {
           status: 429,
@@ -269,6 +296,12 @@ Deno.test('XmApi - Retry Logic for 429 Rate Limit', async () => {
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
+          headers: {
+            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'xmas/0.0.1 (Deno)',
+          },
         },
         mockedResponse: {
           status: 429,
@@ -281,6 +314,12 @@ Deno.test('XmApi - Retry Logic for 429 Rate Limit', async () => {
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
+          headers: {
+            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'xmas/0.0.1 (Deno)',
+          },
         },
         mockedResponse: {
           status: 200,
@@ -329,6 +368,12 @@ Deno.test('XmApi - Retry Logic for 500 Server Error', async () => {
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
+          headers: {
+            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'xmas/0.0.1 (Deno)',
+          },
         },
         mockedResponse: {
           status: 500,
@@ -341,6 +386,12 @@ Deno.test('XmApi - Retry Logic for 500 Server Error', async () => {
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
+          headers: {
+            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'xmas/0.0.1 (Deno)',
+          },
         },
         mockedResponse: {
           status: 200,
@@ -382,6 +433,12 @@ Deno.test('XmApi - Max Retries Exceeded', async () => {
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
+          headers: {
+            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'xmas/0.0.1 (Deno)',
+          },
         },
         mockedResponse: {
           status: 500,
@@ -394,6 +451,12 @@ Deno.test('XmApi - Max Retries Exceeded', async () => {
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
+          headers: {
+            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'xmas/0.0.1 (Deno)',
+          },
         },
         mockedResponse: {
           status: 500,
@@ -441,6 +504,12 @@ Deno.test('XmApi - Error Response Structure', async () => {
     expectedRequest: {
       method: 'GET',
       url: 'https://test.xmatters.com/api/xm/1/groups/nonexistent',
+      headers: {
+        'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'xmas/0.0.1 (Deno)',
+      },
     },
     mockedResponse: errorResponse,
   }]);
@@ -476,6 +545,12 @@ Deno.test('XmApi - Network Error Handling', async () => {
     expectedRequest: {
       method: 'GET',
       url: 'https://test.xmatters.com/api/xm/1/groups',
+      headers: {
+        'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'xmas/0.0.1 (Deno)',
+      },
     },
     mockedError: new Error('Network connection failed'),
   }]);
@@ -517,6 +592,7 @@ Deno.test('XmApi - Custom Headers Integration', async () => {
         'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'User-Agent': 'xmas/0.0.1 (Deno)',
         'X-Custom-Header': 'custom-value',
         'X-Client-Version': '1.0.0',
       },
@@ -559,8 +635,9 @@ Deno.test('XmApi - OAuth Token Acquisition', async () => {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Accept': 'application/json',
+        'User-Agent': 'xmas/0.0.1 (Deno)',
       },
-      // Don't validate exact body order since URLSearchParams might reorder
+      body: 'grant_type=password&client_id=test-client&username=testuser&password=testpass',
     },
     mockedResponse: {
       status: 200,
@@ -606,6 +683,9 @@ Deno.test('XmApi - User-Agent Header', async () => {
       method: 'GET',
       url: 'https://test.xmatters.com/api/xm/1/groups',
       headers: {
+        'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
         'User-Agent': 'xmas/0.0.1 (Deno)', // Should match version in deno.json
       },
     },
@@ -637,6 +717,12 @@ Deno.test('XmApi - Logging Integration', async () => {
     expectedRequest: {
       method: 'GET',
       url: 'https://test.xmatters.com/api/xm/1/groups',
+      headers: {
+        'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'xmas/0.0.1 (Deno)',
+      },
     },
     mockedResponse: {
       status: 200,

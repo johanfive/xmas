@@ -16,6 +16,7 @@ import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/htt
 import type { Logger } from './types/internal/config.ts';
 import { stub } from 'std/testing/mock.ts';
 import { FakeTime } from 'std/testing/time.ts';
+import { expect } from 'std/expect/mod.ts';
 
 /**
  * Request-response pair for testing
@@ -47,7 +48,7 @@ export class MockHttpClient implements HttpClient {
       );
     }
     const currentPair = this.requestResponsePairs[this.requestIndex];
-    this.validateRequest(request, currentPair.expectedRequest, this.requestIndex);
+    this.validateRequest(request, currentPair.expectedRequest);
     this.requestIndex++;
     if (currentPair.mockedError) {
       return Promise.reject(currentPair.mockedError);
@@ -90,43 +91,11 @@ export class MockHttpClient implements HttpClient {
   private validateRequest(
     actualRequest: HttpRequest,
     expectedRequest: Partial<HttpRequest>,
-    requestNumber: number,
   ): void {
-    const validationErrors: string[] = [];
-    if (expectedRequest.method && actualRequest.method !== expectedRequest.method) {
-      validationErrors.push(
-        `method: expected "${expectedRequest.method}", got "${actualRequest.method}"`,
-      );
-    }
-    if (expectedRequest.url && actualRequest.url !== expectedRequest.url) {
-      validationErrors.push(`url: expected "${expectedRequest.url}", got "${actualRequest.url}"`);
-    }
-    if (expectedRequest.body !== undefined) {
-      const actualBodyJson = JSON.stringify(actualRequest.body);
-      const expectedBodyJson = JSON.stringify(expectedRequest.body);
-      if (actualBodyJson !== expectedBodyJson) {
-        validationErrors.push(`body: expected ${expectedBodyJson}, got ${actualBodyJson}`);
-      }
-    }
-    if (expectedRequest.headers) {
-      for (const [headerName, expectedValue] of Object.entries(expectedRequest.headers)) {
-        const actualValue = actualRequest.headers?.[headerName];
-        if (actualValue !== expectedValue) {
-          validationErrors.push(
-            `header "${headerName}": expected "${expectedValue}", got "${
-              actualValue || 'undefined'
-            }"`,
-          );
-        }
-      }
-    }
-    if (validationErrors.length > 0) {
-      throw new Error(
-        `MockHttpClient: Request #${requestNumber + 1} validation failed:\n  ${
-          validationErrors.join('\n  ')
-        }`,
-      );
-    }
+    expect(actualRequest.method).toBe(expectedRequest.method);
+    expect(actualRequest.url).toBe(expectedRequest.url);
+    expect(actualRequest.body).toBe(expectedRequest.body);
+    expect(actualRequest.headers).toEqual(expectedRequest.headers);
   }
 }
 
