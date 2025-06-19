@@ -15,14 +15,17 @@
 import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
 import type { Logger } from './types/internal/config.ts';
 import { stub } from 'std/testing/mock.ts';
+import { FakeTime } from 'std/testing/time.ts';
 
 /**
  * Request-response pair for testing
- * Set up expected requests and their mocked responses.
+ * Set up expected requests and their mocked responses or errors.
  */
 interface MockRequestResponse {
   expectedRequest: Partial<HttpRequest>;
-  mockedResponse: HttpResponse;
+  mockedResponse?: HttpResponse;
+  /** If provided, the request will throw this error instead of returning a response */
+  mockedError?: Error;
 }
 
 /**
@@ -45,15 +48,22 @@ export class MockHttpClient implements HttpClient {
     }
     const currentPair = this.requestResponsePairs[this.requestIndex];
     this.validateRequest(request, currentPair.expectedRequest, this.requestIndex);
-    const response = currentPair.mockedResponse;
     this.requestIndex++;
-    return Promise.resolve(response);
+    if (currentPair.mockedError) {
+      return Promise.reject(currentPair.mockedError);
+    }
+    if (!currentPair.mockedResponse) {
+      throw new Error(
+        `MockHttpClient: Request #${this.requestIndex} must have either mockedResponse or mockedError`,
+      );
+    }
+    return Promise.resolve(currentPair.mockedResponse);
   }
 
   /**
-   * Set up expected requests and their mocked responses.
+   * Set up expected requests and their mocked responses or errors.
    * Each actual request will be validated against the expected request in order.
-   * Responses are returned in the same order as the pairs are defined.
+   * Responses/errors are returned in the same order as the pairs are defined.
    */
   setReqRes(pairs: MockRequestResponse[]): void {
     this.requestResponsePairs = [...pairs]; // Copy to avoid external mutation
@@ -139,4 +149,20 @@ export function createMockLogger() {
     warnSpy: stub(mockLogger, 'warn', noop),
     errorSpy: stub(mockLogger, 'error', noop),
   };
+}
+
+/**
+ * Utility function to simplify testing with FakeTime.
+ * Automatically manages FakeTime setup and cleanup.
+ *
+ * @param testFn - The test function to run with FakeTime control
+ * @returns A promise that resolves when the test completes
+ */
+export async function withFakeTime(testFn: (fakeTime: FakeTime) => Promise<void>): Promise<void> {
+  const fakeTime = new FakeTime();
+  try {
+    await testFn(fakeTime);
+  } finally {
+    fakeTime.restore();
+  }
 }

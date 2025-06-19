@@ -72,7 +72,11 @@ export class RequestHandler {
       'User-Agent': `xmas/${denoJson.version} (Deno)`,
       ...initialConfig.defaultHeaders,
     };
-    this.requestBuilder = new RequestBuilder(initialConfig.hostname, headers);
+    // Ensure hostname includes protocol (only add https:// if not already present)
+    const baseUrl = initialConfig.hostname.startsWith('http')
+      ? initialConfig.hostname
+      : `https://${initialConfig.hostname}`;
+    this.requestBuilder = new RequestBuilder(baseUrl, headers);
   }
 
   async send<T>(
