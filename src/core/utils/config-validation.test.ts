@@ -43,19 +43,79 @@ Deno.test('validateConfig - invalid hostname', () => {
   // @ts-ignore - Testing invalid property types
   expect(() => validateConfig({ hostname: 123 })).toThrow(XmApiError);
   // @ts-ignore - Testing invalid property types
-  expect(() => validateConfig({ hostname: 123 })).toThrow('hostname must be a string');
+  expect(() => validateConfig({ hostname: 123 })).toThrow(
+    'Invalid config: hostname must be a valid xMatters hostname (*.xmatters.com or *.xmatters.com.au)',
+  );
   // @ts-ignore - Testing invalid property types
   expect(() => validateConfig({ hostname: null })).toThrow(XmApiError);
   // @ts-ignore - Testing invalid property types
-  expect(() => validateConfig({ hostname: null })).toThrow('hostname must be a string');
+  expect(() => validateConfig({ hostname: null })).toThrow(
+    'Invalid config: hostname must be a valid xMatters hostname (*.xmatters.com or *.xmatters.com.au)',
+  );
   // @ts-ignore - Testing invalid property types
   expect(() => validateConfig({ hostname: undefined })).toThrow(XmApiError);
   // @ts-ignore - Testing invalid property types
-  expect(() => validateConfig({ hostname: undefined })).toThrow('hostname must be a string');
+  expect(() => validateConfig({ hostname: undefined })).toThrow(
+    'Invalid config: hostname must be a valid xMatters hostname (*.xmatters.com or *.xmatters.com.au)',
+  );
+});
+
+Deno.test('validateConfig - empty hostname', () => {
+  // @ts-ignore - Testing invalid configuration
+  expect(() => validateConfig({ hostname: '' })).toThrow(XmApiError);
+  // @ts-ignore - Testing invalid configuration
+  expect(() => validateConfig({ hostname: '' })).toThrow(
+    'Invalid config: hostname must be a valid xMatters hostname (*.xmatters.com or *.xmatters.com.au)',
+  );
+});
+
+Deno.test('validateConfig - invalid xMatters hostname', () => {
+  const invalidHostnames = [
+    'google.com',
+    'example.org',
+    'xmatters.com', // Missing subdomain
+    'test.xmatters.co', // Wrong TLD
+    'test.xmatters.net',
+    'test.xmatters.com.uk', // Wrong country code
+    'xmatters.com.au', // Missing subdomain
+    'sub.domain.example.com',
+    'localhost',
+    '192.168.1.1',
+    'test.xmatters.comm', // Typo in domain
+    'testxmatters.com', // Missing dot before xmatters
+  ];
+
+  invalidHostnames.forEach((hostname) => {
+    // @ts-ignore - Testing invalid configuration
+    expect(() => validateConfig({ hostname })).toThrow(XmApiError);
+    // @ts-ignore - Testing invalid configuration
+    expect(() => validateConfig({ hostname })).toThrow(
+      'Invalid config: hostname must be a valid xMatters hostname (*.xmatters.com or *.xmatters.com.au)',
+    );
+  });
+});
+
+Deno.test('validateConfig - valid xMatters hostname', () => {
+  const validHostnames = [
+    'company.xmatters.com',
+    'test.xmatters.com',
+    'my-org.xmatters.com',
+    'company.xmatters.com.au',
+    'test.xmatters.com.au',
+    'my-org.xmatters.com.au',
+    'sub.domain.xmatters.com',
+    'sub.domain.xmatters.com.au',
+  ];
+
+  validHostnames.forEach((hostname) => {
+    // Need valid auth config to pass full validation
+    const config = { hostname, username: 'user', password: 'pass' };
+    expect(() => validateConfig(config)).not.toThrow();
+  });
 });
 
 Deno.test('validateConfig - invalid maxRetries', () => {
-  const baseConfig = { hostname: 'test.com', username: 'user', password: 'pass' };
+  const baseConfig = { hostname: 'test.xmatters.com', username: 'user', password: 'pass' };
   // @ts-ignore - Testing invalid property types
   expect(() => validateConfig({ ...baseConfig, maxRetries: 'invalid' })).toThrow(XmApiError);
   // @ts-ignore - Testing invalid property types
@@ -73,7 +133,7 @@ Deno.test('validateConfig - invalid maxRetries', () => {
 });
 
 Deno.test('validateConfig - valid maxRetries', () => {
-  const baseConfig = { hostname: 'test.com', username: 'user', password: 'pass' };
+  const baseConfig = { hostname: 'test.xmatters.com', username: 'user', password: 'pass' };
   expect(() => validateConfig({ ...baseConfig, maxRetries: 0 })).not.toThrow();
   expect(() => validateConfig({ ...baseConfig, maxRetries: 3 })).not.toThrow();
   expect(() => validateConfig({ ...baseConfig, maxRetries: 10 })).not.toThrow();
@@ -81,7 +141,7 @@ Deno.test('validateConfig - valid maxRetries', () => {
 
 Deno.test('validateConfig - no auth method provided', () => {
   // @ts-ignore - Testing incomplete config
-  const config = { hostname: 'test.com' };
+  const config = { hostname: 'test.xmatters.com' };
   // @ts-ignore - Testing incomplete config
   expect(() => validateConfig(config)).toThrow(XmApiError);
   // @ts-ignore - Testing incomplete config
@@ -93,7 +153,7 @@ Deno.test('validateConfig - no auth method provided', () => {
 Deno.test('validateConfig - multiple auth methods', () => {
   // @ts-ignore - Testing invalid config combination
   const config = {
-    hostname: 'test.com',
+    hostname: 'test.xmatters.com',
     username: 'user',
     password: 'pass',
     authorizationCode: 'code',
@@ -106,7 +166,7 @@ Deno.test('validateConfig - multiple auth methods', () => {
 });
 
 Deno.test('validateConfig - basic auth validation', () => {
-  const baseConfig = { hostname: 'test.com' };
+  const baseConfig = { hostname: 'test.xmatters.com' };
   // Invalid username types
   // @ts-ignore - Testing invalid property types
   expect(() => validateConfig({ ...baseConfig, username: 123, password: 'pass' })).toThrow(
@@ -159,7 +219,7 @@ Deno.test('validateConfig - basic auth validation', () => {
 
 Deno.test('validateConfig - valid basic auth', () => {
   const config = {
-    hostname: 'test.com',
+    hostname: 'test.xmatters.com',
     username: 'user',
     password: 'pass',
   };
@@ -167,7 +227,7 @@ Deno.test('validateConfig - valid basic auth', () => {
 });
 
 Deno.test('validateConfig - auth code validation', () => {
-  const baseConfig = { hostname: 'test.com' };
+  const baseConfig = { hostname: 'test.xmatters.com' };
   // Invalid authorizationCode types
   // @ts-ignore - Testing invalid property types
   expect(() => validateConfig({ ...baseConfig, authorizationCode: 123, clientId: 'client' }))
@@ -229,7 +289,7 @@ Deno.test('validateConfig - auth code validation', () => {
 
 Deno.test('validateConfig - valid auth code', () => {
   const config = {
-    hostname: 'test.com',
+    hostname: 'test.xmatters.com',
     authorizationCode: 'code',
     clientId: 'client',
   };
@@ -243,7 +303,7 @@ Deno.test('validateConfig - valid auth code', () => {
 });
 
 Deno.test('validateConfig - OAuth tokens validation', () => {
-  const baseConfig = { hostname: 'test.com' };
+  const baseConfig = { hostname: 'test.xmatters.com' };
   // Invalid accessToken types
   // @ts-ignore - Testing invalid property types
   expect(() =>
@@ -339,7 +399,7 @@ Deno.test('validateConfig - OAuth tokens validation', () => {
 
 Deno.test('validateConfig - valid OAuth tokens', () => {
   const config = {
-    hostname: 'test.com',
+    hostname: 'test.xmatters.com',
     accessToken: 'access',
     refreshToken: 'refresh',
     clientId: 'client',
@@ -350,7 +410,7 @@ Deno.test('validateConfig - valid OAuth tokens', () => {
 Deno.test('validateConfig - edge cases', () => {
   // maxRetries undefined should be fine
   const config = {
-    hostname: 'test.com',
+    hostname: 'test.xmatters.com',
     username: 'user',
     password: 'pass',
     maxRetries: undefined,
@@ -358,7 +418,7 @@ Deno.test('validateConfig - edge cases', () => {
   expect(() => validateConfig(config)).not.toThrow();
   // clientSecret undefined should be fine
   const authCodeConfig = {
-    hostname: 'test.com',
+    hostname: 'test.xmatters.com',
     authorizationCode: 'code',
     clientId: 'client',
     clientSecret: undefined,

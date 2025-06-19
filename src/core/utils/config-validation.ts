@@ -2,6 +2,15 @@ import { XmApiError } from '../errors.ts';
 import type { XmApiConfig } from '../types/internal/config.ts';
 
 /**
+ * Validates that a hostname is a valid xMatters hostname.
+ * Valid hostnames must end with .xmatters.com or .xmatters.com.au
+ */
+function isValidXmHostname(hostname: string): boolean {
+  const validHostname = /^.*\.xmatters\.com(\.au)?$/i;
+  return validHostname.test(hostname);
+}
+
+/**
  * Validates that the config is in exactly one valid state.
  * Prevents invalid overlapping configurations and validates data types.
  */
@@ -14,8 +23,14 @@ export function validateConfig(config: XmApiConfig): void {
     throw new XmApiError('Invalid config: Expected object');
   }
   // 2. Validate hostname
-  if (typeof config.hostname !== 'string') {
-    throw new XmApiError('Invalid config: hostname must be a string');
+  if (
+    typeof config.hostname !== 'string' ||
+    !config.hostname ||
+    !isValidXmHostname(config.hostname)
+  ) {
+    throw new XmApiError(
+      'Invalid config: hostname must be a valid xMatters hostname (*.xmatters.com or *.xmatters.com.au)',
+    );
   }
   // 3. Validate maxRetries if provided
   if (config.maxRetries !== undefined) {

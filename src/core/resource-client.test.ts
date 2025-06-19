@@ -23,11 +23,20 @@ class MockHttpClient {
   }
 }
 
+// Create silent mock logger
+const mockLogger = {
+  debug: () => {},
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+};
+
 // Helper to create ResourceClient with mock dependencies
 function createResourceClientTestSetup(basePath: string) {
   const mockHttpClient = new MockHttpClient();
   const requestHandler = new RequestHandler({
     httpClient: mockHttpClient,
+    logger: mockLogger,
     hostname: 'https://test.xmatters.com',
     username: 'testuser',
     password: 'testpass',
