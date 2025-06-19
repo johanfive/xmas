@@ -26,13 +26,9 @@ export class XmApi {
   }
 }
 
-// Re-export types and errors
-export * from './core/types/internal/config.ts';
-export * from './core/types/internal/http.ts';
-export * from './core/types/internal/oauth.ts';
-export * from './core/types/internal/auth-state.ts';
-export * from './core/types/endpoint/response.ts';
-export * from './core/types/endpoint/composers.ts';
-export * from './core/types/endpoint/params.ts';
-export * from './endpoints/groups/types.ts';
+// Re-export only the types consumers need to implement
+// Dependency injection interfaces - consumers implement these
+export type { Logger, TokenRefreshCallback } from './core/types/internal/config.ts';
+export type { HttpClient } from './core/types/internal/http.ts';
+// Export error class - consumers need to catch and handle these
 export { XmApiError } from './core/errors.ts';
