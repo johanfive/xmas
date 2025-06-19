@@ -12,7 +12,7 @@ import type {
   DeleteOptions,
   GetOptions,
   RequestWithBodyOptions,
-} from './types/internal/methods.ts';
+} from './types/internal/http-methods.ts';
 import { XmApiError } from './errors.ts';
 import type { OAuth2TokenResponse } from './types/internal/oauth.ts';
 import { RequestBuilder, type RequestBuildOptions } from './request-builder.ts';

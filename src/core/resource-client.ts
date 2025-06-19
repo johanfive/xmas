@@ -2,7 +2,7 @@ import type {
   DeleteOptions,
   GetOptions,
   RequestWithBodyOptions,
-} from './types/internal/methods.ts';
+} from './types/internal/http-methods.ts';
 import type { RequestHandler } from './request-handler.ts';
 import { XmApiError } from './errors.ts';
 
