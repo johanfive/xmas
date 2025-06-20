@@ -1,4 +1,4 @@
-import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
+import type { Headers, HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
 import {
   isAuthCodeConfig,
   isBasicAuthConfig,
@@ -66,7 +66,7 @@ export class RequestHandler {
       throw new XmApiError('Invalid configuration type');
     }
     // Create request builder with immutable properties
-    const headers: Record<string, string> = {
+    const headers: Headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'User-Agent': `xmas/${denoJson.version} (Deno)`,

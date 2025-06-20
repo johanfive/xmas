@@ -1,6 +1,7 @@
 import { ResourceClient } from '../../core/resource-client.ts';
 import type { RequestHandler } from '../../core/request-handler.ts';
 import type { HttpResponse } from '../../core/types/internal/http.ts';
+import type { HttpMethodBaseOptions } from '../../core/types/internal/http-methods.ts';
 import type {
   EmptyHttpResponse,
   PaginatedHttpResponse,
@@ -23,43 +24,59 @@ export class GroupsEndpoint {
    * The results can be filtered and paginated using the params object.
    *
    * @param params Optional parameters to filter and paginate the results
+   * @param overrides Optional request overrides like custom headers
    * @returns The HTTP response containing a paginated list of groups
    * @throws {XmApiError} If the request fails
    */
-  get(params?: GetGroupsParams): Promise<PaginatedHttpResponse<Group>> {
-    return this.http.get<GetGroupsResponse>({ query: params });
+  get(
+    params?: GetGroupsParams,
+    overrides?: Pick<HttpMethodBaseOptions, 'headers'>,
+  ): Promise<PaginatedHttpResponse<Group>> {
+    return this.http.get<GetGroupsResponse>({ ...overrides, query: params });
   }
 
   /**
    * Get a group by ID
    *
    * @param id The ID of the group to retrieve
+   * @param overrides Optional request overrides like custom headers
    * @returns The HTTP response containing the group
    * @throws {XmApiError} If the request fails
    */
-  getById(id: string): Promise<HttpResponse<Group>> {
-    return this.http.get<Group>({ path: id });
+  getById(
+    id: string,
+    overrides?: Pick<HttpMethodBaseOptions, 'headers'>,
+  ): Promise<HttpResponse<Group>> {
+    return this.http.get<Group>({ ...overrides, path: id });
   }
 
   /**
    * Create a new group or update an existing one
    *
    * @param group The group to create or update
+   * @param overrides Optional request overrides like custom headers
    * @returns The HTTP response containing the created or updated group
    * @throws {XmApiError} If the request fails
    */
-  save(group: Partial<Group>): Promise<HttpResponse<Group>> {
-    return this.http.post<Group>({ body: group });
+  save(
+    group: Partial<Group>,
+    overrides?: Pick<HttpMethodBaseOptions, 'headers'>,
+  ): Promise<HttpResponse<Group>> {
+    return this.http.post<Group>({ ...overrides, body: group });
   }
 
   /**
    * Delete a group by ID
    *
    * @param id The ID of the group to delete
+   * @param overrides Optional request overrides like custom headers
    * @returns The HTTP response
    * @throws {XmApiError} If the request fails
    */
-  delete(id: string): Promise<EmptyHttpResponse> {
-    return this.http.delete<void>({ path: id });
+  delete(
+    id: string,
+    overrides?: Pick<HttpMethodBaseOptions, 'headers'>,
+  ): Promise<EmptyHttpResponse> {
+    return this.http.delete<void>({ ...overrides, path: id });
   }
 }

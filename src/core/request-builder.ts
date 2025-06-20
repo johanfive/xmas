@@ -1,4 +1,4 @@
-import type { HttpRequest } from './types/internal/http.ts';
+import type { Headers, HttpRequest } from './types/internal/http.ts';
 import { XmApiError } from './errors.ts';
 
 /**
@@ -23,7 +23,7 @@ export interface RequestBuildOptions {
   /** The HTTP method to use for the request */
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   /** Optional headers to send with the request */
-  headers?: Record<string, string>;
+  headers?: Headers;
   /** Optional query parameters to include in the URL */
   query?: Record<string, unknown>;
   /** Optional request body */
@@ -39,7 +39,7 @@ export class RequestBuilder {
 
   constructor(
     private readonly baseUrl: string,
-    private readonly defaultHeaders: Record<string, string> = {},
+    private readonly defaultHeaders: Headers = {},
   ) {}
 
   build(options: RequestBuildOptions): HttpRequest {
@@ -67,7 +67,7 @@ export class RequestBuilder {
       });
     }
     // Build headers by merging default headers with request-specific headers
-    const headers: Record<string, string> = { ...this.defaultHeaders, ...options.headers };
+    const headers: Headers = { ...this.defaultHeaders, ...options.headers };
     const builtRequest: HttpRequest = {
       method: options.method || 'GET',
       url: url.toString(),

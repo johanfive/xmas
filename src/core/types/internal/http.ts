@@ -4,6 +4,11 @@
  */
 
 /**
+ * HTTP headers as key-value pairs
+ */
+export type Headers = Record<string, string>;
+
+/**
  * Represents an HTTP response from the xMatters API.
  * @template T The expected type of the response body
  */
@@ -13,7 +18,7 @@ export interface HttpResponse<T = unknown> {
   /** The HTTP status code */
   status: number;
   /** Response headers */
-  headers: Record<string, string>;
+  headers: Headers;
 }
 
 /**
@@ -27,7 +32,7 @@ export interface HttpRequest {
   /** The complete, fully-qualified URL ready for the HTTP client to use */
   url: string;
   /** Headers to send with the request (includes auth, content-type, etc.) */
-  headers?: Record<string, string>;
+  headers?: Headers;
   /** Optional request body (injected HTTP client should handle serialization) */
   body?: unknown;
   /** Current retry attempt number (for logging/debugging by HTTP clients) */

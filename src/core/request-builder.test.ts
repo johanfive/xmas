@@ -1,11 +1,12 @@
 import { expect } from 'std/expect/mod.ts';
 import { RequestBuilder, type RequestBuildOptions } from './request-builder.ts';
+import type { Headers } from './types/internal/http.ts';
 import { XmApiError } from './errors.ts';
 
 // Test helper to create RequestBuilder with standard configuration
 function createRequestBuilderTestSetup(options: {
   hostname?: string;
-  defaultHeaders?: Record<string, string>;
+  defaultHeaders?: Headers;
 } = {}) {
   const {
     hostname = 'https://example.xmatters.com',

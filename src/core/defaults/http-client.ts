@@ -1,4 +1,4 @@
-import type { HttpClient, HttpRequest, HttpResponse } from '../types/internal/http.ts';
+import type { Headers, HttpClient, HttpRequest, HttpResponse } from '../types/internal/http.ts';
 
 export class DefaultHttpClient implements HttpClient {
   async send(request: HttpRequest): Promise<HttpResponse> {
@@ -15,7 +15,7 @@ export class DefaultHttpClient implements HttpClient {
       body: serializedRequestBody,
     });
 
-    const headers: Record<string, string> = {};
+    const headers: Headers = {};
     response.headers.forEach((value, key) => {
       headers[key.toLowerCase()] = value;
     });

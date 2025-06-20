@@ -1,3 +1,5 @@
+import type { Headers } from './types/internal/http.ts';
+
 /**
  * Base class for all errors thrown by the xMatters API client.
  * Contains information about the failed request and response.
@@ -26,7 +28,7 @@ export class XmApiError extends Error {
       /** The HTTP status code that triggered this error */
       status: number;
       /** Response headers that may contain additional error context */
-      headers: Record<string, string>;
+      headers: Headers;
     } | null,
     public override readonly cause?: unknown,
   ) {

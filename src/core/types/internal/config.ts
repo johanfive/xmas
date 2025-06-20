@@ -4,6 +4,7 @@
  */
 
 import type { HttpClient } from './http.ts';
+import type { Headers } from './http.ts';
 
 /**
  * Interface that loggers must implement to be used with this library.
@@ -32,7 +33,7 @@ export interface XmApiBaseConfig {
   hostname: string;
   httpClient?: HttpClient;
   logger?: Logger;
-  defaultHeaders?: Record<string, string>;
+  defaultHeaders?: Headers;
   maxRetries?: number;
   onTokenRefresh?: TokenRefreshCallback;
 }
