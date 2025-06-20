@@ -62,7 +62,12 @@ export class RequestBuilder {
     if (options.query) {
       Object.entries(options.query).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
-          url.searchParams.set(key, String(value));
+          if (Array.isArray(value)) {
+            // Handle arrays by joining with commas
+            url.searchParams.set(key, value.map(String).join(','));
+          } else {
+            url.searchParams.set(key, String(value));
+          }
         }
       });
     }

@@ -89,7 +89,7 @@ export type WithSort<T extends Record<string, unknown> = Record<string, never>> 
  *     return this.http.get({ path: '/users', query: params });
  *   }
  *
- *   async getById(id: string): GetUserResponse {
+ *   async getByIdentifier(id: string): GetUserResponse {
  *     return this.http.get({ path: `/${id}` });
  *   }
  * }

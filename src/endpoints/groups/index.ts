@@ -1,12 +1,16 @@
 import { ResourceClient } from '../../core/resource-client.ts';
 import type { RequestHandler } from '../../core/request-handler.ts';
 import type { HttpResponse } from '../../core/types/internal/http.ts';
-import type { HttpMethodBaseOptions } from '../../core/types/internal/http-methods.ts';
+import type {
+  DeleteOptions,
+  GetOptions,
+  RequestWithBodyOptions,
+} from '../../core/types/internal/http-methods.ts';
 import type {
   EmptyHttpResponse,
   PaginatedHttpResponse,
 } from '../../core/types/endpoint/response.ts';
-import type { GetGroupsParams, GetGroupsResponse, Group } from './types.ts';
+import type { GetGroupParams, GetGroupsParams, GetGroupsResponse, Group } from './types.ts';
 
 /**
  * Provides access to the groups endpoints of the xMatters API.
@@ -21,33 +25,31 @@ export class GroupsEndpoint {
 
   /**
    * Get a list of groups from xMatters.
-   * The results can be filtered and paginated using the params object.
+   * The results can be filtered and paginated using the options object.
    *
-   * @param params Optional parameters to filter and paginate the results
-   * @param overrides Optional request overrides like custom headers
+   * @param options Optional parameters including query filters, headers, and other request options
    * @returns The HTTP response containing a paginated list of groups
    * @throws {XmApiError} If the request fails
    */
   get(
-    params?: GetGroupsParams,
-    overrides?: Pick<HttpMethodBaseOptions, 'headers'>,
+    options?: Omit<GetOptions, 'path'> & { path?: string; query?: GetGroupsParams },
   ): Promise<PaginatedHttpResponse<Group>> {
-    return this.http.get<GetGroupsResponse>({ ...overrides, query: params });
+    return this.http.get<GetGroupsResponse>(options);
   }
 
   /**
-   * Get a group by ID
+   * Get a group by its ID or targetName.
    *
-   * @param id The ID of the group to retrieve
-   * @param overrides Optional request overrides like custom headers
+   * @param identifier The ID or targetName of the group to retrieve
+   * @param options Optional request options including embed parameters and headers
    * @returns The HTTP response containing the group
    * @throws {XmApiError} If the request fails
    */
-  getById(
-    id: string,
-    overrides?: Pick<HttpMethodBaseOptions, 'headers'>,
+  getByIdentifier(
+    identifier: string,
+    options?: Omit<GetOptions, 'path'> & { query?: GetGroupParams },
   ): Promise<HttpResponse<Group>> {
-    return this.http.get<Group>({ ...overrides, path: id });
+    return this.http.get<Group>({ ...options, path: identifier });
   }
 
   /**
@@ -60,7 +62,7 @@ export class GroupsEndpoint {
    */
   save(
     group: Partial<Group>,
-    overrides?: Pick<HttpMethodBaseOptions, 'headers'>,
+    overrides?: Omit<RequestWithBodyOptions, 'path'>,
   ): Promise<HttpResponse<Group>> {
     return this.http.post<Group>({ ...overrides, body: group });
   }
@@ -75,7 +77,7 @@ export class GroupsEndpoint {
    */
   delete(
     id: string,
-    overrides?: Pick<HttpMethodBaseOptions, 'headers'>,
+    overrides?: Omit<DeleteOptions, 'path'>,
   ): Promise<EmptyHttpResponse> {
     return this.http.delete<void>({ ...overrides, path: id });
   }

@@ -169,7 +169,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
     try {
-      const response = await endpoint.get({ limit: 10, offset: 20 });
+      const response = await endpoint.get({ query: { limit: 10, offset: 20 } });
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
       expect(sentRequest.url).toBe(
@@ -189,7 +189,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
     try {
-      const response = await endpoint.get({ search: 'oncall', limit: 5 });
+      const response = await endpoint.get({ query: { search: 'oncall', limit: 5 } });
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
       expect(sentRequest.url).toBe(
@@ -205,11 +205,11 @@ Deno.test('GroupsEndpoint', async (t) => {
     }
   });
 
-  await t.step('getById() - sends correct HTTP request', async () => {
+  await t.step('getByIdentifier() - sends correct HTTP request', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockSingleGroupResponse));
     try {
-      const response = await endpoint.getById('test-group-123');
+      const response = await endpoint.getByIdentifier('test-group-123');
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');
@@ -299,7 +299,7 @@ Deno.test('GroupsEndpoint', async (t) => {
     try {
       let thrownError: unknown;
       try {
-        await endpoint.getById('non-existent-group');
+        await endpoint.getByIdentifier('non-existent-group');
       } catch (error) {
         thrownError = error;
       }
@@ -414,14 +414,15 @@ Deno.test('GroupsEndpoint', async (t) => {
   await t.step('get() with all possible parameters', async () => {
     const { mockHttpClient, endpoint } = createEndpointTestSetup();
     const sendStub = stub(mockHttpClient, 'send', () => Promise.resolve(mockPaginatedResponse));
-    const params = {
-      limit: 25,
-      offset: 50,
-      search: 'test search',
-      // Add other params that might exist in GetGroupsParams
-    };
     try {
-      const response = await endpoint.get(params);
+      const response = await endpoint.get({
+        query: {
+          limit: 25,
+          offset: 50,
+          search: 'test search',
+          // Add other params that might exist in GetGroupsParams
+        },
+      });
       expect(sendStub.calls.length).toBe(1);
       const sentRequest: HttpRequest = sendStub.calls[0].args[0];
       expect(sentRequest.method).toBe('GET');

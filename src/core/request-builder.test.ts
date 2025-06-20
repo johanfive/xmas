@@ -289,4 +289,53 @@ Deno.test('RequestBuilder', async (t) => {
     expect(request.url).toContain('/api/xm/1'); // Should contain API version
     expect(request.url).toContain('example.xmatters.com'); // Should contain configured hostname
   });
+
+  await t.step('handles array query parameters by joining with commas', () => {
+    const { builder } = createRequestBuilderTestSetup();
+    const options: RequestBuildOptions = {
+      path: '/groups/123',
+      query: {
+        embed: ['supervisors', 'services', 'observers'],
+        tags: ['urgent', 'critical'],
+        single: 'value',
+      },
+    };
+    const request = builder.build(options);
+    const url = new URL(request.url);
+    expect(url.searchParams.get('embed')).toBe('supervisors,services,observers');
+    expect(url.searchParams.get('tags')).toBe('urgent,critical');
+    expect(url.searchParams.get('single')).toBe('value');
+  });
+
+  await t.step('handles empty arrays gracefully', () => {
+    const { builder } = createRequestBuilderTestSetup();
+    const options: RequestBuildOptions = {
+      path: '/groups',
+      query: {
+        embed: [],
+        normal: 'value',
+      },
+    };
+    const request = builder.build(options);
+    const url = new URL(request.url);
+    expect(url.searchParams.get('embed')).toBe('');
+    expect(url.searchParams.get('normal')).toBe('value');
+  });
+
+  await t.step('handles mixed array types by converting to strings', () => {
+    const { builder } = createRequestBuilderTestSetup();
+    const options: RequestBuildOptions = {
+      path: '/items',
+      query: {
+        ids: [1, 2, 3],
+        flags: [true, false],
+        mixed: ['string', 42, true],
+      },
+    };
+    const request = builder.build(options);
+    const url = new URL(request.url);
+    expect(url.searchParams.get('ids')).toBe('1,2,3');
+    expect(url.searchParams.get('flags')).toBe('true,false');
+    expect(url.searchParams.get('mixed')).toBe('string,42,true');
+  });
 });

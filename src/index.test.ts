@@ -35,7 +35,7 @@ Deno.test('XmApi - Basic Auth Integration', async () => {
     },
   }]);
 
-  const response = await api.groups.get({ limit: 10 });
+  const response = await api.groups.get({ query: { limit: 10 } });
   expect(response.status).toBe(200);
   expect(response.body.count).toBe(0);
 
@@ -515,7 +515,7 @@ Deno.test('XmApi - Error Response Structure', async () => {
   }]);
 
   try {
-    await api.groups.getById('nonexistent');
+    await api.groups.getByIdentifier('nonexistent');
     throw new Error('Should have thrown XmApiError');
   } catch (error) {
     expect(error).toBeInstanceOf(XmApiError);

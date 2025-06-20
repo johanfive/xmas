@@ -1,5 +1,5 @@
 import type { PaginatedResponse } from '../../core/types/endpoint/response.ts';
-import type { WithPagination, WithSearch } from '../../core/types/endpoint/composers.ts';
+import type { WithPagination, WithSearch, WithSort } from '../../core/types/endpoint/composers.ts';
 
 /**
  * Represents a group in xMatters.
@@ -60,10 +60,30 @@ export interface GroupFilters extends Record<string, unknown> {
 }
 
 /**
- * Type for parameters used in methods that retrieve lists of groups.
- * Combines common pagination and search with group-specific filters.
+ * Supported embed values for retrieving a single group.
  */
-export type GetGroupsParams = WithPagination<WithSearch<GroupFilters>>;
+export type GroupEmbedOptions =
+  | 'supervisors' // Up to the first 100 group supervisors
+  | 'observers' // Returns the id and name of the role(s) set as observers for the group
+  | 'services'; // Returns the list of services owned by the group
+
+/**
+ * Type for parameters used when retrieving a single group by identifier.
+ * Supports embedding related objects in the response.
+ */
+export interface GetGroupParams extends Record<string, unknown> {
+  /**
+   * Objects to embed in the response. Can be a single value or an array of values.
+   * For new/undocumented embed options, use type assertion: 'newOption' as GroupEmbedOptions or any
+   */
+  embed?: GroupEmbedOptions | GroupEmbedOptions[];
+}
+
+/**
+ * Type for parameters used in methods that retrieve lists of groups.
+ * Combines common pagination and search with group-specific filters and embed options.
+ */
+export type GetGroupsParams = WithPagination<WithSearch<WithSort<GroupFilters>>> & GetGroupParams;
 
 /**
  * Response type for methods that return a list of groups.

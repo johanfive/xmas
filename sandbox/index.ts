@@ -10,7 +10,7 @@ async function testBasicAuthOnly() {
   }
   try {
     const xm = new XmApi(config.basicAuth);
-    const response = await xm.groups.get({ limit: 1 });
+    const response = await xm.groups.get({ query: { limit: 1 } });
     console.log('[SUCCESS] Basic Auth Only:', response.status, response.body);
   } catch (err) {
     printError('[ERROR] Basic Auth Only:', err);
@@ -38,7 +38,7 @@ async function testOauthViaBasicAuthWithExplicitClientId() {
     // Save tokens for scenario 4
     lastAccessToken = tokenResp.body.access_token;
     lastRefreshToken = tokenResp.body.refresh_token;
-    const response = await xm.groups.get({ limit: 1 });
+    const response = await xm.groups.get({ query: { limit: 1 } });
     console.log(
       '[SUCCESS-2] Basic Auth (explicit clientId): API Call Response:',
       response.status,
@@ -79,7 +79,7 @@ async function testPreExistingOAuthTokens() {
   }
   try {
     const xm = new XmApi({ hostname, accessToken, refreshToken, clientId });
-    const response = await xm.groups.get({ limit: 1 });
+    const response = await xm.groups.get({ query: { limit: 1 } });
     console.log(
       '[SUCCESS] Pre-existing OAuth Tokens: API Call Response:',
       response.status,

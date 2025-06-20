@@ -33,10 +33,10 @@ export class ResourceClient {
     return `${this.basePath}/${cleanPath}`;
   }
 
-  get<T>(options: Omit<GetOptions, 'path'> & { path?: string }) {
+  get<T>(options?: Omit<GetOptions, 'path'> & { path?: string }) {
     return this.http.get<T>({
       ...options,
-      path: this.buildPath(options.path),
+      path: this.buildPath(options?.path),
     });
   }
 
