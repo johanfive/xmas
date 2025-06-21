@@ -4,6 +4,12 @@
  */
 
 /**
+ * Base type for query parameter objects.
+ * Represents any object with string keys and unknown values.
+ */
+export type QueryParams = Record<string, unknown>;
+
+/**
  * Common pagination parameters used across many endpoints
  */
 export interface PaginationParams {
@@ -30,20 +36,27 @@ export interface SearchParams {
    * The search is typically case-insensitive and matches any part of the searchable fields
    */
   search?: string;
+
+  /**
+   * The operand to use to limit or expand the search query parameter.
+   * - AND: only returns records that have all search terms
+   * - OR: returns records that have any of the search terms (default)
+   * The operand is case-sensitive.
+   */
+  operand?: 'AND' | 'OR';
 }
 
 /**
- * Common sorting parameters used across many endpoints
+ * Common status filtering parameters used across many endpoints
  */
-export interface SortParams {
+export interface StatusParams {
   /**
-   * Field to sort by
+   * The status of the resource.
    */
-  sortBy?: string;
-
-  /**
-   * Sort direction
-   * @default 'ASC'
-   */
-  sortOrder?: 'ASC' | 'DESC';
+  status?: 'ACTIVE' | 'INACTIVE';
 }
+
+/**
+ * Sort direction values used across all endpoints
+ */
+export type SortOrder = 'ASCENDING' | 'DESCENDING';
