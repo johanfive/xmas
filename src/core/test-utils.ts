@@ -41,10 +41,12 @@ export class MockHttpClient implements HttpClient {
   send(request: HttpRequest): Promise<HttpResponse> {
     this.requests.push(request);
     if (this.requestIndex >= this.requestResponsePairs.length) {
-      throw new Error(
-        `MockHttpClient: Unexpected request #${
-          this.requestIndex + 1
-        }. Expected ${this.requestResponsePairs.length} requests total.`,
+      return Promise.reject(
+        new Error(
+          `MockHttpClient: Unexpected request #${
+            this.requestIndex + 1
+          }. Expected ${this.requestResponsePairs.length} requests total.`,
+        ),
       );
     }
     const currentPair = this.requestResponsePairs[this.requestIndex];
@@ -54,8 +56,10 @@ export class MockHttpClient implements HttpClient {
       return Promise.reject(currentPair.mockedError);
     }
     if (!currentPair.mockedResponse) {
-      throw new Error(
-        `MockHttpClient: Request #${this.requestIndex} must have either mockedResponse or mockedError`,
+      return Promise.reject(
+        new Error(
+          `MockHttpClient: Request #${this.requestIndex} must have either mockedResponse or mockedError`,
+        ),
       );
     }
     return Promise.resolve(currentPair.mockedResponse);
