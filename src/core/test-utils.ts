@@ -66,6 +66,8 @@ export class MockHttpClient implements HttpClient {
    * Responses/errors are returned in the same order as the pairs are defined.
    */
   setReqRes(pairs: MockRequestResponse[]): void {
+    // Auto-reset for next test
+    this.requests = [];
     this.requestResponsePairs = [...pairs]; // Copy to avoid external mutation
   }
 
@@ -75,11 +77,9 @@ export class MockHttpClient implements HttpClient {
    * Automatically resets the client for the next test.
    */
   verifyAllRequestsMade(): void {
-    if (this.requests.length < this.requestResponsePairs.length) {
-      throw new Error(
-        `MockHttpClient: Expected ${this.requestResponsePairs.length} requests, but only ${this.requests.length} were made.`,
-      );
-    }
+    expect(`request count: ${this.requests.length}`).toBe(
+      `request count: ${this.requestResponsePairs.length}`,
+    );
     // Auto-reset for next test
     this.requests = [];
     this.requestResponsePairs = [];
