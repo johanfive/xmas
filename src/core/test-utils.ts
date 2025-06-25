@@ -34,30 +34,26 @@ interface MockRequestResponse {
  */
 export class MockHttpClient implements HttpClient {
   private requestResponsePairs: MockRequestResponse[] = [];
-  private requestIndex = 0;
   public requests: HttpRequest[] = [];
 
   send(request: HttpRequest): Promise<HttpResponse> {
     this.requests.push(request);
-    if (this.requestIndex >= this.requestResponsePairs.length) {
+    if (this.requests.length > this.requestResponsePairs.length) {
       return Promise.reject(
         new Error(
-          `MockHttpClient: Unexpected request #${
-            this.requestIndex + 1
-          }. Expected ${this.requestResponsePairs.length} requests total.`,
+          `MockHttpClient: Unexpected request #${this.requests.length}. Expected ${this.requestResponsePairs.length} requests total.`,
         ),
       );
     }
-    const currentPair = this.requestResponsePairs[this.requestIndex];
+    const currentPair = this.requestResponsePairs[this.requests.length - 1];
     this.validateRequest(request, currentPair.expectedRequest);
-    this.requestIndex++;
     if (currentPair.mockedError) {
       return Promise.reject(currentPair.mockedError);
     }
     if (!currentPair.mockedResponse) {
       return Promise.reject(
         new Error(
-          `MockHttpClient: Request #${this.requestIndex} must have either mockedResponse or mockedError`,
+          `MockHttpClient: Request #${this.requests.length} must have either mockedResponse or mockedError`,
         ),
       );
     }
@@ -71,7 +67,6 @@ export class MockHttpClient implements HttpClient {
    */
   setReqRes(pairs: MockRequestResponse[]): void {
     this.requestResponsePairs = [...pairs]; // Copy to avoid external mutation
-    this.requestIndex = 0;
   }
 
   /**
@@ -80,15 +75,14 @@ export class MockHttpClient implements HttpClient {
    * Automatically resets the client for the next test.
    */
   verifyAllRequestsMade(): void {
-    if (this.requestIndex < this.requestResponsePairs.length) {
+    if (this.requests.length < this.requestResponsePairs.length) {
       throw new Error(
-        `MockHttpClient: Expected ${this.requestResponsePairs.length} requests, but only ${this.requestIndex} were made.`,
+        `MockHttpClient: Expected ${this.requestResponsePairs.length} requests, but only ${this.requests.length} were made.`,
       );
     }
     // Auto-reset for next test
     this.requests = [];
     this.requestResponsePairs = [];
-    this.requestIndex = 0;
   }
 
   private validateRequest(
@@ -116,7 +110,6 @@ interface ExpectedLog {
  */
 export class MockLogger implements Logger {
   private expectedLogs: ExpectedLog[] = [];
-  private logIndex = 0;
   public logs: Array<{ level: keyof Logger; message: string }> = [];
 
   debug(message: string): void {
