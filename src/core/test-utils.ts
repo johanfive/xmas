@@ -14,7 +14,6 @@
 
 import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
 import type { Logger } from './types/internal/config.ts';
-import { stub } from 'std/testing/mock.ts';
 import { FakeTime } from 'std/testing/time.ts';
 import { expect } from 'std/expect/mod.ts';
 
@@ -104,24 +103,77 @@ export class MockHttpClient implements HttpClient {
 }
 
 /**
- * Creates a silent mock logger with pre-configured stubs for call verification.
- * Returns both the logger and the stubs for easy access.
+ * Expected log entry for testing
  */
-export function createMockLogger() {
-  const noop = () => {};
-  const mockLogger: Logger = {
-    debug: noop,
-    info: noop,
-    warn: noop,
-    error: noop,
-  };
-  return {
-    mockLogger,
-    debugSpy: stub(mockLogger, 'debug', noop),
-    infoSpy: stub(mockLogger, 'info', noop),
-    warnSpy: stub(mockLogger, 'warn', noop),
-    errorSpy: stub(mockLogger, 'error', noop),
-  };
+interface ExpectedLog {
+  level: keyof Logger;
+  message: string | RegExp;
+}
+
+/**
+ * Mock logger that prevents console output during tests and validates log calls.
+ * Log calls are validated in order and must match exactly.
+ */
+export class MockLogger implements Logger {
+  private expectedLogs: ExpectedLog[] = [];
+  private logIndex = 0;
+  public logs: Array<{ level: keyof Logger; message: string }> = [];
+
+  debug(message: string): void {
+    this.log('debug', message);
+  }
+  info(message: string): void {
+    this.log('info', message);
+  }
+  warn(message: string): void {
+    this.log('warn', message);
+  }
+  error(message: string): void {
+    this.log('error', message);
+  }
+
+  /**
+   * Set up expected log calls in order.
+   * Each actual log call will be validated against the expected log in order.
+   * Automatically resets any previous expectations.
+   *
+   * @param logs Array of expected logs. Each log must have:
+   *             - level: The log level (debug, info, warn, error)
+   *             - message: Either a string for exact match or RegExp for pattern matching
+   */
+  setExpectedLogs(logs: ExpectedLog[]): void {
+    // Reset state when setting new expectations
+    this.logs = [];
+    this.expectedLogs = [...logs]; // Copy to avoid external mutation
+  }
+
+  verifyAllLogsLogged(): void {
+    // Only validate if logs were explicitly expected
+    if (this.expectedLogs.length > 0) {
+      expect(`log count: ${this.logs.length}`).toBe(`log count: ${this.expectedLogs.length}`);
+    }
+    // Auto-reset for next test
+    this.logs = [];
+    this.expectedLogs = [];
+  }
+
+  private log(level: keyof Logger, message: string): void {
+    // If no expected logs were set, allow any logging (silent mode)
+    if (this.expectedLogs.length === 0) {
+      return;
+    }
+    this.logs.push({ level, message });
+    // Verify we haven't exceeded expected log count
+    expect(this.logs.length).toBeLessThanOrEqual(this.expectedLogs.length);
+    const expected = this.expectedLogs[this.logs.length - 1];
+    expect(`log level: ${level}`).toBe(`log level: ${expected.level}`);
+    // Verify message matches (string or RegExp)
+    if (typeof expected.message === 'string') {
+      expect(message).toBe(expected.message);
+    } else {
+      expect(message).toMatch(expected.message);
+    }
+  }
 }
 
 /**

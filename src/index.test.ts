@@ -1,12 +1,11 @@
 import { expect } from 'std/expect/mod.ts';
 import { XmApi, XmApiError } from './index.ts';
-import { createMockLogger, MockHttpClient, withFakeTime } from './core/test-utils.ts';
+import { MockHttpClient, MockLogger, withFakeTime } from './core/test-utils.ts';
 
-// Shared mock HTTP client - resets after each test via verifyAllRequestsMade()
 const mockHttpClient = new MockHttpClient();
+const mockLogger = new MockLogger();
 
 Deno.test('XmApi - Basic Auth Integration', async () => {
-  const { mockLogger } = createMockLogger();
   const api = new XmApi({
     hostname: 'test.xmatters.com',
     username: 'testuser',
@@ -39,7 +38,6 @@ Deno.test('XmApi - Basic Auth Integration', async () => {
 });
 
 Deno.test('XmApi - OAuth Token Integration', async () => {
-  const { mockLogger } = createMockLogger();
   const api = new XmApi({
     hostname: 'test.xmatters.com',
     accessToken: 'test-access-token',
@@ -73,7 +71,6 @@ Deno.test('XmApi - OAuth Token Integration', async () => {
 });
 
 Deno.test('XmApi - Token Refresh on 401', async () => {
-  const { mockLogger } = createMockLogger();
   let tokenRefreshCalled = false;
   let newAccessToken = '';
   let newRefreshToken = '';
@@ -160,7 +157,20 @@ Deno.test('XmApi - Token Refresh on 401', async () => {
 });
 
 Deno.test('XmApi - Token Refresh Callback Error Handling', async () => {
-  const { mockLogger, warnSpy } = createMockLogger();
+  // Test that callback errors are logged as warnings but don't break the flow
+  mockLogger.setExpectedLogs([
+    { level: 'debug', message: '--> GET https://test.xmatters.com/api/xm/1/groups' },
+    { level: 'debug', message: /^<-- 401 \(\d+ms\)$/ },
+    { level: 'debug', message: 'Refreshing token for client test-client-id' },
+    { level: 'debug', message: '--> POST https://test.xmatters.com/api/xm/1/oauth2/token' },
+    { level: 'debug', message: /^<-- 200 \(\d+ms\)$/ },
+    {
+      level: 'warn',
+      message: 'Error in onTokenRefresh callback, but continuing with refreshed token',
+    },
+    { level: 'debug', message: '--> GET https://test.xmatters.com/api/xm/1/groups' },
+    { level: 'debug', message: /^<-- 200 \(\d+ms\)$/ },
+  ]);
   const api = new XmApi({
     hostname: 'test.xmatters.com',
     accessToken: 'expired-token',
@@ -236,15 +246,28 @@ Deno.test('XmApi - Token Refresh Callback Error Handling', async () => {
   // Should not throw despite callback error
   const response = await api.groups.get();
   expect(response.status).toBe(200);
-  // Should log warning about callback error
-  expect(warnSpy.calls).toHaveLength(1);
-  expect(warnSpy.calls[0].args[0]).toContain('Error in onTokenRefresh callback');
   mockHttpClient.verifyAllRequestsMade();
+  mockLogger.verifyAllLogsLogged();
 });
 
 Deno.test('XmApi - Retry Logic for 429 Rate Limit', async () => {
   return await withFakeTime(async (fakeTime) => {
-    const { mockLogger, debugSpy } = createMockLogger();
+    mockLogger.setExpectedLogs([
+      { level: 'debug', message: '--> GET https://test.xmatters.com/api/xm/1/groups' },
+      { level: 'debug', message: /^<-- 429 \(\d+ms\)$/ },
+      {
+        level: 'debug',
+        message: 'Request failed with status 429, retrying in 1000ms (attempt 1/2)',
+      },
+      { level: 'debug', message: '--> GET https://test.xmatters.com/api/xm/1/groups' },
+      { level: 'debug', message: /^<-- 429 \(\d+ms\)$/ },
+      {
+        level: 'debug',
+        message: 'Request failed with status 429, retrying in 2000ms (attempt 2/2)',
+      },
+      { level: 'debug', message: '--> GET https://test.xmatters.com/api/xm/1/groups' },
+      { level: 'debug', message: /^<-- 200 \(\d+ms\)$/ },
+    ]);
     const api = new XmApi({
       hostname: 'test.xmatters.com',
       username: 'testuser',
@@ -327,18 +350,23 @@ Deno.test('XmApi - Retry Logic for 429 Rate Limit', async () => {
           `Original error: ${response.reason}`,
       );
     }
-    // Verify that retry attempts were logged (2 failures logged before final success)
-    const debugCalls = debugSpy.calls.filter((call) =>
-      call.args[0].includes('Request failed with status 429')
-    );
-    expect(debugCalls).toHaveLength(2);
     mockHttpClient.verifyAllRequestsMade();
+    mockLogger.verifyAllLogsLogged();
   });
 });
 
 Deno.test('XmApi - Retry Logic for 500 Server Error', async () => {
   return await withFakeTime(async (fakeTime) => {
-    const { mockLogger } = createMockLogger();
+    mockLogger.setExpectedLogs([
+      { level: 'debug', message: '--> GET https://test.xmatters.com/api/xm/1/groups' },
+      { level: 'debug', message: /^<-- 500 \(\d+ms\)$/ },
+      {
+        level: 'debug',
+        message: 'Request failed with status 500, retrying in 1000ms (attempt 1/1)',
+      },
+      { level: 'debug', message: '--> GET https://test.xmatters.com/api/xm/1/groups' },
+      { level: 'debug', message: /^<-- 200 \(\d+ms\)$/ },
+    ]);
     const api = new XmApi({
       hostname: 'test.xmatters.com',
       username: 'testuser',
@@ -403,12 +431,12 @@ Deno.test('XmApi - Retry Logic for 500 Server Error', async () => {
       );
     }
     mockHttpClient.verifyAllRequestsMade();
+    mockLogger.verifyAllLogsLogged();
   });
 });
 
 Deno.test('XmApi - Max Retries Exceeded', async () => {
   return await withFakeTime(async (fakeTime) => {
-    const { mockLogger } = createMockLogger();
     const api = new XmApi({
       hostname: 'test.xmatters.com',
       username: 'testuser',
@@ -482,7 +510,6 @@ Deno.test('XmApi - Max Retries Exceeded', async () => {
 });
 
 Deno.test('XmApi - HTTP Error Response Structure', async () => {
-  const { mockLogger } = createMockLogger();
   const api = new XmApi({
     hostname: 'test.xmatters.com',
     username: 'testuser',
@@ -525,7 +552,6 @@ Deno.test('XmApi - HTTP Error Response Structure', async () => {
 });
 
 Deno.test('XmApi - Network Error Handling', async () => {
-  const { mockLogger } = createMockLogger();
   const api = new XmApi({
     hostname: 'test.xmatters.com',
     username: 'testuser',
@@ -562,7 +588,6 @@ Deno.test('XmApi - Network Error Handling', async () => {
 });
 
 Deno.test('XmApi - Custom Headers Integration', async () => {
-  const { mockLogger } = createMockLogger();
   const api = new XmApi({
     hostname: 'test.xmatters.com',
     username: 'testuser',
@@ -599,7 +624,6 @@ Deno.test('XmApi - Custom Headers Integration', async () => {
 });
 
 Deno.test('XmApi - OAuth Token Acquisition', async () => {
-  const { mockLogger } = createMockLogger();
   let tokenRefreshCalled = false;
   const api = new XmApi({
     hostname: 'test.xmatters.com',
@@ -651,7 +675,6 @@ Deno.test('XmApi - OAuth Token Acquisition', async () => {
 });
 
 Deno.test('XmApi - User-Agent Header', async () => {
-  const { mockLogger } = createMockLogger();
   const api = new XmApi({
     hostname: 'test.xmatters.com',
     username: 'testuser',
@@ -682,7 +705,11 @@ Deno.test('XmApi - User-Agent Header', async () => {
 });
 
 Deno.test('XmApi - Logging Integration', async () => {
-  const { mockLogger, debugSpy } = createMockLogger();
+  // Test that logging integration works correctly - validate basic request/response logs
+  mockLogger.setExpectedLogs([
+    { level: 'debug', message: '--> GET https://test.xmatters.com/api/xm/1/groups' },
+    { level: 'debug', message: /^<-- 200 \(\d+ms\)$/ },
+  ]);
   const api = new XmApi({
     hostname: 'test.xmatters.com',
     username: 'testuser',
@@ -708,14 +735,8 @@ Deno.test('XmApi - Logging Integration', async () => {
     },
   }]);
   await api.groups.get();
-  // Should log request and response
-  const requestLog = debugSpy.calls.find((call) =>
-    call.args[0].includes('--> GET https://test.xmatters.com/api/xm/1/groups')
-  );
-  const responseLog = debugSpy.calls.find((call) => call.args[0].includes('<-- 200'));
-  expect(requestLog).toBeDefined();
-  expect(responseLog).toBeDefined();
   mockHttpClient.verifyAllRequestsMade();
+  mockLogger.verifyAllLogsLogged();
 });
 
 /*
@@ -753,3 +774,121 @@ Deno.test('XmApi - Logging Integration', async () => {
   + Error handling in token refresh callbacks
 
 */
+
+/*
+
+=== DEMO TESTS FOR MAINTAINERS ===
+These tests showcase the MockLogger pattern matching capabilities, particularly for handling time-dependent logs.
+
+*/
+
+Deno.test('DEMO: MockLogger Pattern Matching - String vs RegExp', async () => {
+  const mockHttpClient = new MockHttpClient();
+  const mockLogger = new MockLogger();
+
+  // Set up a request that will generate timing logs
+  mockHttpClient.setReqRes([{
+    expectedRequest: {
+      method: 'GET',
+      url: 'https://test.xmatters.com/api/xm/1/groups',
+      headers: {
+        'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': 'xmas/0.0.1 (Deno)',
+      },
+    },
+    mockedResponse: {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: { groups: [] },
+    },
+  }]);
+
+  // Demo: Mix of exact string matching and pattern matching
+  mockLogger.setExpectedLogs([
+    { level: 'debug', message: '--> GET https://test.xmatters.com/api/xm/1/groups' }, // Exact string match
+    { level: 'debug', message: /^<-- 200 \(\d+ms\)$/ }, // Pattern match for timing
+  ]);
+
+  const config = {
+    hostname: 'test.xmatters.com',
+    username: 'testuser',
+    password: 'testpass',
+    httpClient: mockHttpClient,
+    logger: mockLogger,
+  };
+
+  const api = new XmApi(config);
+  await api.groups.get();
+
+  // Verify both types of log matching worked
+  mockLogger.verifyAllLogsLogged();
+  mockHttpClient.verifyAllRequestsMade();
+});
+
+Deno.test('DEMO: MockLogger Pattern Matching - Complex Timing Patterns', async () => {
+  const mockHttpClient = new MockHttpClient();
+  const mockLogger = new MockLogger();
+
+  // Set up multiple requests to show various timing patterns
+  mockHttpClient.setReqRes([
+    {
+      expectedRequest: {
+        method: 'GET',
+        url: 'https://test.xmatters.com/api/xm/1/groups',
+        headers: {
+          'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'xmas/0.0.1 (Deno)',
+        },
+      },
+      mockedResponse: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: { groups: [] },
+      },
+    },
+    {
+      expectedRequest: {
+        method: 'GET',
+        url: 'https://test.xmatters.com/api/xm/1/groups/test-group',
+        headers: {
+          'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'xmas/0.0.1 (Deno)',
+        },
+      },
+      mockedResponse: {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: { id: 'test-group', name: 'Test Group' },
+      },
+    },
+  ]);
+
+  // Demo: Various pattern matching scenarios
+  mockLogger.setExpectedLogs([
+    { level: 'debug', message: '--> GET https://test.xmatters.com/api/xm/1/groups' },
+    { level: 'debug', message: /^<-- 200 \(\d+ms\)$/ }, // Any positive duration
+    { level: 'debug', message: /^--> GET .*groups\/test-group/ }, // Pattern for method + partial URL
+    { level: 'debug', message: /^<-- 200 \(\d+ms\)$/ }, // Another timing pattern
+  ]);
+
+  const config = {
+    hostname: 'test.xmatters.com',
+    username: 'testuser',
+    password: 'testpass',
+    httpClient: mockHttpClient,
+    logger: mockLogger,
+  };
+
+  const api = new XmApi(config);
+  await api.groups.get();
+  await api.groups.getByIdentifier('test-group');
+
+  mockLogger.verifyAllLogsLogged();
+  mockHttpClient.verifyAllRequestsMade();
+});
