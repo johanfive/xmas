@@ -22,35 +22,17 @@ function createRequestBuilderTestSetup(options: {
   return { builder };
 }
 
-// Mock data for tests
-const mockRelativePathOptions: RequestBuildOptions = {
-  path: '/people',
-  method: 'GET',
-  query: { search: 'test', limit: 10 },
-};
-
-const mockExternalUrlOptions: RequestBuildOptions = {
-  fullUrl: 'https://api.external-service.com/v2/endpoint',
-  method: 'POST',
-  query: { key: 'value' },
-  headers: { 'Authorization': 'Bearer token' },
-};
-
-const mockCustomHeadersOptions: RequestBuildOptions = {
-  path: '/groups',
-  method: 'PUT',
-  headers: {
-    'custom-header': 'custom-value',
-    'default-header': 'overridden-value', // Should override default
-  },
-  body: { name: 'test-group' },
-};
-
 Deno.test('RequestBuilder', async (t) => {
+  // Create shared builder instance for most tests
+  const { builder } = createRequestBuilderTestSetup();
+
   await t.step('URL Construction', async (t) => {
     await t.step('builds request with relative path - verifies correct URL construction', () => {
-      const { builder } = createRequestBuilderTestSetup();
-      const request = builder.build(mockRelativePathOptions);
+      const request = builder.build({
+        path: '/people',
+        method: 'GET',
+        query: { search: 'test', limit: 10 },
+      });
       expect(request.url).toBe('https://example.xmatters.com/api/xm/1/people?search=test&limit=10');
       expect(request.method).toBe('GET');
       expect(request.headers?.['Content-Type']).toBe('application/json');
@@ -60,8 +42,12 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('builds request with external URL - bypasses API version path', () => {
-      const { builder } = createRequestBuilderTestSetup();
-      const request = builder.build(mockExternalUrlOptions);
+      const request = builder.build({
+        fullUrl: 'https://api.external-service.com/v2/endpoint',
+        method: 'POST',
+        query: { key: 'value' },
+        headers: { 'Authorization': 'Bearer token' },
+      });
       expect(request.url).toBe('https://api.external-service.com/v2/endpoint?key=value');
       expect(request.method).toBe('POST');
       expect(request.headers?.['Content-Type']).toBe('application/json');
@@ -70,7 +56,6 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('preserves existing query parameters in external URLs', () => {
-      const { builder } = createRequestBuilderTestSetup();
       const options: RequestBuildOptions = {
         fullUrl: 'https://api.external-service.com/search?existing=param&another=value',
         query: { additional: 'param', new: 'value' },
@@ -84,21 +69,29 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('works with custom hostname configuration', () => {
-      const { builder } = createRequestBuilderTestSetup({
+      // This test needs its own builder with custom hostname
+      const { builder: customBuilder } = createRequestBuilderTestSetup({
         hostname: 'https://custom.xmatters.com',
       });
       const options: RequestBuildOptions = {
         path: '/notifications',
       };
-      const request = builder.build(options);
+      const request = customBuilder.build(options);
       expect(request.url).toBe('https://custom.xmatters.com/api/xm/1/notifications');
     });
   });
 
   await t.step('Header Management', async (t) => {
     await t.step('merges headers correctly - request headers override defaults', () => {
-      const { builder } = createRequestBuilderTestSetup();
-      const request = builder.build(mockCustomHeadersOptions);
+      const request = builder.build({
+        path: '/groups',
+        method: 'PUT',
+        headers: {
+          'custom-header': 'custom-value',
+          'default-header': 'overridden-value', // Should override default
+        },
+        body: { name: 'test-group' },
+      });
       expect(request.headers?.['Content-Type']).toBe('application/json');
       expect(request.headers?.['Accept']).toBe('application/json');
       expect(request.headers?.['default-header']).toBe('overridden-value'); // Overridden
@@ -108,21 +101,21 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('works with empty default headers', () => {
-      const { builder } = createRequestBuilderTestSetup({
+      // This test needs its own builder with empty default headers
+      const { builder: emptyHeadersBuilder } = createRequestBuilderTestSetup({
         defaultHeaders: {},
       });
       const options: RequestBuildOptions = {
         path: '/sites',
         headers: { 'Custom-Header': 'value' },
       };
-      const request = builder.build(options);
+      const request = emptyHeadersBuilder.build(options);
       expect(request.headers).toEqual({ 'Custom-Header': 'value' });
     });
   });
 
   await t.step('Query Parameter Handling', async (t) => {
     await t.step('handles empty query object', () => {
-      const { builder } = createRequestBuilderTestSetup();
       const options: RequestBuildOptions = {
         path: '/devices',
         query: {},
@@ -132,7 +125,6 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('filters out null and undefined query parameters', () => {
-      const { builder } = createRequestBuilderTestSetup();
       const options: RequestBuildOptions = {
         path: '/events',
         query: {
@@ -151,7 +143,6 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('handles array query parameters by joining with commas', () => {
-      const { builder } = createRequestBuilderTestSetup();
       const options: RequestBuildOptions = {
         path: '/groups/123',
         query: {
@@ -168,7 +159,6 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('handles empty arrays gracefully', () => {
-      const { builder } = createRequestBuilderTestSetup();
       const options: RequestBuildOptions = {
         path: '/groups',
         query: {
@@ -183,7 +173,6 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('handles mixed array types by converting to strings', () => {
-      const { builder } = createRequestBuilderTestSetup();
       const options: RequestBuildOptions = {
         path: '/items',
         query: {
@@ -202,7 +191,6 @@ Deno.test('RequestBuilder', async (t) => {
 
   await t.step('Default Behavior', async (t) => {
     await t.step('defaults method to GET when not specified', () => {
-      const { builder } = createRequestBuilderTestSetup();
       const options: RequestBuildOptions = {
         path: '/users',
       };
@@ -212,7 +200,6 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('preserves retry attempt when provided', () => {
-      const { builder } = createRequestBuilderTestSetup();
       const options: RequestBuildOptions = {
         path: '/shifts',
         retryAttempt: 2,
@@ -224,53 +211,55 @@ Deno.test('RequestBuilder', async (t) => {
 
   await t.step('Error Handling', async (t) => {
     await t.step('throws when path does not start with slash', () => {
-      const { builder } = createRequestBuilderTestSetup();
-      let thrownError: unknown;
-      try {
-        builder.build({ path: 'people' });
-      } catch (error) {
-        thrownError = error;
-      }
+      let thrownError: XmApiError | undefined;
+      expect(() => {
+        try {
+          builder.build({ path: 'people' });
+        } catch (e) {
+          thrownError = e as XmApiError;
+          throw e; // Re-throw for expect().toThrow()
+        }
+      }).toThrow();
       expect(thrownError).toBeInstanceOf(XmApiError);
-      const error = thrownError as XmApiError;
-      expect(error.message).toBe('Path must start with a forward slash, e.g. "/people"');
+      expect(thrownError?.message).toBe('Path must start with a forward slash, e.g. "/people"');
     });
 
     await t.step('throws when both path and fullUrl are provided', () => {
-      const { builder } = createRequestBuilderTestSetup();
-      let thrownError: unknown;
-      try {
-        builder.build({
-          path: '/people',
-          fullUrl: 'https://api.external-service.com/v2/endpoint',
-        });
-      } catch (error) {
-        thrownError = error;
-      }
+      let thrownError: XmApiError | undefined;
+      expect(() => {
+        try {
+          builder.build({
+            path: '/people',
+            fullUrl: 'https://api.external-service.com/v2/endpoint',
+          });
+        } catch (e) {
+          thrownError = e as XmApiError;
+          throw e; // Re-throw for expect().toThrow()
+        }
+      }).toThrow();
       expect(thrownError).toBeInstanceOf(XmApiError);
-      const error = thrownError as XmApiError;
-      expect(error.message).toBe(
+      expect(thrownError?.message).toBe(
         'Cannot specify both fullUrl and path. Use fullUrl for external endpoints, path for xMatters API endpoints.',
       );
     });
 
     await t.step('throws when neither path nor fullUrl is provided', () => {
-      const { builder } = createRequestBuilderTestSetup();
-      let thrownError: unknown;
-      try {
-        builder.build({});
-      } catch (error) {
-        thrownError = error;
-      }
+      let thrownError: XmApiError | undefined;
+      expect(() => {
+        try {
+          builder.build({});
+        } catch (e) {
+          thrownError = e as XmApiError;
+          throw e; // Re-throw for expect().toThrow()
+        }
+      }).toThrow();
       expect(thrownError).toBeInstanceOf(XmApiError);
-      const error = thrownError as XmApiError;
-      expect(error.message).toBe('Either path or fullUrl must be provided');
+      expect(thrownError?.message).toBe('Either path or fullUrl must be provided');
     });
   });
 
   await t.step('Integration Tests', async (t) => {
     await t.step('builds complex request with all options', () => {
-      const { builder } = createRequestBuilderTestSetup();
       const complexOptions: RequestBuildOptions = {
         path: '/forms/abc123/submissions',
         method: 'PATCH',
@@ -320,7 +309,6 @@ Deno.test('RequestBuilder', async (t) => {
     await t.step('verifies external URL is correctly passed to HTTP client', () => {
       // This test ensures that when using fullUrl, the complete external URL
       // (not just the path) is properly passed to the underlying HTTP client
-      const { builder } = createRequestBuilderTestSetup();
       const request = builder.build({
         fullUrl: 'https://api.external-service.com/v2/endpoint',
         query: { test: 'param' },
@@ -334,7 +322,6 @@ Deno.test('RequestBuilder', async (t) => {
 
     await t.step('verifies API path is correctly built with base URL', () => {
       // This test ensures that relative API paths are correctly combined with the base URL
-      const { builder } = createRequestBuilderTestSetup();
       const request = builder.build({
         path: '/groups',
         query: { search: 'test' },
