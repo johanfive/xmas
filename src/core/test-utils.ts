@@ -91,7 +91,7 @@ export class MockHttpClient implements HttpClient {
   ): void {
     expect(actualRequest.method).toBe(expectedRequest.method);
     expect(actualRequest.url).toBe(expectedRequest.url);
-    expect(actualRequest.body).toBe(expectedRequest.body);
+    expect(actualRequest.body).toEqual(expectedRequest.body);
     expect(actualRequest.headers).toEqual(expectedRequest.headers);
   }
 }

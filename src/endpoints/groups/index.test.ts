@@ -658,9 +658,9 @@ Deno.test('GroupsEndpoint', async (t) => {
     };
 
     const tokenRefreshErrorResponse = {
-      status: 400,
+      status: 401,
       headers: { 'content-type': 'application/json' },
-      body: { error: 'invalid_grant', error_description: 'Invalid refresh token' },
+      body: { code: 401, message: 'Invalid refresh token', reason: 'Unauthorized' },
     };
 
     let callCount = 0;
@@ -687,7 +687,7 @@ Deno.test('GroupsEndpoint', async (t) => {
       // Verify error details are correct
       const xmError = thrownError as XmApiError;
       expect(xmError.message).toBe('Failed to refresh token');
-      expect(xmError.response?.status).toBe(400);
+      expect(xmError.response?.status).toBe(401);
     } finally {
       sendStub.restore();
     }
