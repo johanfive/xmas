@@ -2,11 +2,11 @@
 
 `xmas` for short 🎄
 
-A TypeScript/JavaScript library for interacting with the xMatt// xmApi will now automatically use OAuth tokens for all subsequent requests
-const groups = await xmApi.groups.get();
-```
+A TypeScript/JavaScript library for interacting with the xMatt// xmApi will now automatically use
+OAuth tokens for all subsequent requests const groups = await xmApi.groups.get();
 
-The library will automatically start using the OAuth tokens and purge the username & password from memory for security.PI.
+The library will automatically start using the OAuth tokens and purge the username & password from
+memory for security.PI.
 
 - 🎄 **Zero dependencies** - Uses only native fetch API
 - 🔒 **Multiple auth methods** - Basic auth, OAuth, and authorization code flow
@@ -41,8 +41,8 @@ console.log('Headers:', response.headers);
 console.log('Created group:', response.body);
 
 // Get groups with pagination:
-const groupsResponse = await xmApi.groups.get({ 
-  query: { offset: 5, limit: 10 } 
+const groupsResponse = await xmApi.groups.get({
+  query: { offset: 5, limit: 10 },
 });
 console.log('Total groups:', groupsResponse.body.total);
 groupsResponse.body.data.forEach((group) => {
@@ -99,18 +99,20 @@ const config = {
 
 const xmApi = new XmApi(config);
 // Obtain tokens and automatically transition to OAuth
-await xmApi.oauth.obtainTokens({ 
-  clientId: 'your-client-id' 
+await xmApi.oauth.obtainTokens({
+  clientId: 'your-client-id',
 });
 // xmApi will now automatically use OAuth tokens for all subsequent requests
 const groups = await xmApi.groups.get();
 ```
 
-The library will automatically start using the OAuth tokens and purge the username & password you instantiated it with.
+The library will automatically start using the OAuth tokens and purge the username & password you
+instantiated it with.
 
 ## Dependency injection
 
-The library uses dependency injection to allow you to provide your own implementations for HTTP clients, loggers, and other dependencies.
+The library uses dependency injection to allow you to provide your own implementations for HTTP
+clients, loggers, and other dependencies.
 
 ### Custom HTTP Client
 
@@ -137,28 +139,30 @@ const myHttpClient: HttpClient = {
   },
 };
 
-// Important: Your HTTP client should NOT throw on HTTP error status codes (4xx, 5xx)
-// Instead, return the response normally
-// This differs from libraries like Axios that by default throw on error responses
-//
-// While throwing can feel more natural at first, an HTTP response that contains an error status code is still a response, which is expected behaviour. That is not to say the http client should never throw.
-// 
-// The library aligns with the Fetch API approach because it enables:
-// - Better error message formatting with full response context
-// - Smarter retry logic
-// - Consistent error handling across all HTTP clients (fetch, axios, custom, etc.)
-
 const config = {
   hostname: 'https://yourOrg.xmatters.com',
   username: 'authingUserName',
   password: 'authingUserPassword',
   httpClient: myHttpClient,
 };
+// Note: While your HTTP client should not throw on HTTP error status codes (4xx, 5xx),
+// the xmApi SDK itself WILL throw XmApiError instances when the xMatters API returns error responses.
+
+// The library philosophy is that generic HTTP clients should stay simple and predictable,
+// while the SDKs leverage their deep knowledge of an API to provide clean
+// exception-based error handling in your application code.
+
+// The HTTP client simply returning the response when it has one, regardless of the status code,
+// enables the SDK to inspect HTTP error responses to:
+// - Format detailed error messages with full response context
+// - Implement smart retry logic (e.g., retry on 429/5xx, refresh tokens on 401)
+// - Provide consistent error handling across all HTTP clients
 ```
 
 ### Custom Logger
 
-The library uses `console` for logging by default, which works well for most applications. You only need to provide a custom logger if you want different behaviors.
+The library uses `console` for logging by default, which works well for most applications. You only
+need to provide a custom logger if you want different behaviors.
 
 **To use your own logging library:**
 
@@ -190,7 +194,8 @@ const myCustomLogger: Logger = {
 
 **To silence all logging:**
 
-If you prefer to completely disable logging (rather than configuring log levels in your logging library):
+If you prefer to completely disable logging (rather than configuring log levels in your logging
+library):
 
 ```ts
 const silentLogger: Logger = {
@@ -236,16 +241,16 @@ The `HttpClient` interface that your custom implementation must satisfy:
 ```ts
 interface HttpRequest {
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-  url: string;              // Fully qualified URL
-  headers?: Headers;        // Key-value pairs of HTTP headers
-  body?: unknown;          // Request body (will be serialized)
-  retryAttempt?: number;   // Current retry attempt for logging
+  url: string; // Fully qualified URL
+  headers?: Headers; // Key-value pairs of HTTP headers
+  body?: unknown; // Request body (will be serialized)
+  retryAttempt?: number; // Current retry attempt for logging
 }
 
 interface HttpResponse<T = unknown> {
-  body: T;                 // Parsed response body
-  status: number;          // HTTP status code
-  headers: Headers;        // Response headers
+  body: T; // Parsed response body
+  status: number; // HTTP status code
+  headers: Headers; // Response headers
 }
 
 interface HttpClient {
@@ -253,14 +258,20 @@ interface HttpClient {
 }
 ```
 
-**Note:** The `method` field is restricted to the HTTP methods that this library needs to interact with the xMatters API. Your HTTP client implementation can support additional methods (like `OPTIONS`, `HEAD`, etc.) - this restriction only applies to requests that the library will send to your client.
+**Note:** The `method` field is restricted to the HTTP methods that this library needs to interact
+with the xMatters API. Your HTTP client implementation can support additional methods (like
+`OPTIONS`, `HEAD`, etc.) - this restriction only applies to requests that the library will send to
+your client.
 
 Your HTTP client receives a fully prepared request with:
+
 - Complete URL (including query parameters)
 - All necessary headers (including authentication)
 - Serialized request body (if applicable)
 
-The library uses the native `fetch` API by default, so you only need to provide a custom HTTP client if you have specific requirements (like using a different HTTP library or adding custom retry logic).
+The library uses the native `fetch` API by default, so you only need to provide a custom HTTP client
+if you have specific requirements (like using a different HTTP library or adding custom retry
+logic).
 
 ## Error Handling
 
@@ -295,23 +306,23 @@ All configuration options:
 interface XmApiConfig {
   // Required
   hostname: string;
-  
+
   // Authentication (one of these sets required)
-  username?: string;              // Basic auth
-  password?: string;              // Basic auth
-  authorizationCode?: string;     // Auth code flow
-  accessToken?: string;           // OAuth
-  refreshToken?: string;          // OAuth
-  clientId?: string;              // OAuth/Auth code
-  clientSecret?: string;          // Optional for enhanced security
-  
+  username?: string; // Basic auth
+  password?: string; // Basic auth
+  authorizationCode?: string; // Auth code flow
+  accessToken?: string; // OAuth
+  refreshToken?: string; // OAuth
+  clientId?: string; // OAuth/Auth code
+  clientSecret?: string; // Optional for enhanced security
+
   // Optional dependencies
-  httpClient?: HttpClient;        // Custom HTTP implementation
-  logger?: Logger;                // Custom logging implementation
-  
+  httpClient?: HttpClient; // Custom HTTP implementation
+  logger?: Logger; // Custom logging implementation
+
   // Optional settings
-  defaultHeaders?: Headers;       // Additional headers for all requests
-  maxRetries?: number;           // Maximum retry attempts
+  defaultHeaders?: Headers; // Additional headers for all requests
+  maxRetries?: number; // Maximum retry attempts
   onTokenRefresh?: TokenRefreshCallback; // Handle token refresh events
 }
 ```

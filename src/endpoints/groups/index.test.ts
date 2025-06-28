@@ -162,11 +162,11 @@ Deno.test('GroupsEndpoint', async (t) => {
       await groups.getByIdentifier('test-group-id');
     });
 
-    await t.step('makes GET request with URL-encoded targetName', async () => {
+    await t.step('makes GET request with targetName containing spaces', async () => {
       mockHttpClient.setReqRes([{
         expectedRequest: {
           method: 'GET',
-          url: 'https://test.xmatters.com/api/xm/1/groups/Oracle%20Administrators',
+          url: 'https://test.xmatters.com/api/xm/1/groups/Oracle Administrators',
           headers: TestConstants.BASIC_AUTH_HEADERS,
         },
         mockedResponse: {

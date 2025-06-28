@@ -3,6 +3,7 @@ import { validateConfig } from './core/utils/index.ts';
 import type { XmApiConfig } from './core/types/internal/config.ts';
 import { GroupsEndpoint } from './endpoints/groups/index.ts';
 import { OAuthEndpoint } from './endpoints/oauth/index.ts';
+import { PersonsEndpoint } from './endpoints/people/index.ts';
 
 /**
  * Main entry point for the xMatters API client.
@@ -11,10 +12,9 @@ import { OAuthEndpoint } from './endpoints/oauth/index.ts';
 export class XmApi {
   /** HTTP handler that manages all API requests */
   private readonly http: RequestHandler;
-  /** Access groups-related endpoints */
   public readonly groups: GroupsEndpoint;
-  /** Access OAuth-related endpoints for token acquisition */
   public readonly oauth: OAuthEndpoint;
+  public readonly people: PersonsEndpoint;
 
   constructor(config: XmApiConfig) {
     // Validate config to ensure it's in exactly one valid state
@@ -23,6 +23,7 @@ export class XmApi {
     // Initialize endpoints
     this.groups = new GroupsEndpoint(this.http);
     this.oauth = new OAuthEndpoint(this.http);
+    this.people = new PersonsEndpoint(this.http);
   }
 }
 
