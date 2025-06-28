@@ -14,19 +14,19 @@ const requestHandler = new RequestHandler({
 
 const groups = new GroupsEndpoint(requestHandler);
 
-const mockSingleGroupResponse = {
+const mockSingleGroupBody = {
   id: 'test-group-id',
   targetName: 'Test Group',
   recipientType: 'GROUP',
   status: 'ACTIVE',
   groupType: 'ON_CALL',
-  created: '2024-01-01T00:00:00.000Z',
+  created: '2025-01-01T00:00:00.000Z',
 };
 
-const mockPaginatedGroupsResponse = {
+const mockPaginatedGroupsBody = {
   count: 1,
   total: 1,
-  data: [mockSingleGroupResponse],
+  data: [mockSingleGroupBody],
   links: {
     self: '/api/xm/1/groups?limit=100&offset=0',
   },
@@ -44,7 +44,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: mockPaginatedGroupsResponse,
+          body: mockPaginatedGroupsBody,
         },
       }]);
       await groups.get();
@@ -60,7 +60,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: mockPaginatedGroupsResponse,
+          body: mockPaginatedGroupsBody,
         },
       }]);
       await groups.get({
@@ -82,7 +82,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: mockPaginatedGroupsResponse,
+          body: mockPaginatedGroupsBody,
         },
       }]);
       await groups.get({
@@ -111,7 +111,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: mockPaginatedGroupsResponse,
+          body: mockPaginatedGroupsBody,
         },
       }]);
       await groups.get({
@@ -132,7 +132,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: mockPaginatedGroupsResponse,
+          body: mockPaginatedGroupsBody,
         },
       }]);
       await groups.get({
@@ -156,7 +156,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: mockSingleGroupResponse,
+          body: mockSingleGroupBody,
         },
       }]);
       await groups.getByIdentifier('test-group-id');
@@ -172,10 +172,10 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: mockSingleGroupResponse,
+          body: mockSingleGroupBody,
         },
       }]);
-      await groups.getByIdentifier('Oracle%20Administrators');
+      await groups.getByIdentifier('Oracle Administrators');
     });
 
     await t.step('makes GET request with embed parameters', async () => {
@@ -189,7 +189,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: mockSingleGroupResponse,
+          body: mockSingleGroupBody,
         },
       }]);
       await groups.getByIdentifier('test-group-id', {
@@ -212,7 +212,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 200,
           headers: { 'content-type': 'application/json' },
-          body: mockSingleGroupResponse,
+          body: mockSingleGroupBody,
         },
       }]);
       await groups.getByIdentifier('test-group-id', {
@@ -242,7 +242,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 201,
           headers: { 'content-type': 'application/json' },
-          body: { ...newGroup, id: 'new-group-id', created: '2024-01-01T00:00:00.000Z' },
+          body: { ...newGroup, id: 'new-group-id', created: '2025-01-01T00:00:00.000Z' },
         },
       }]);
       await groups.save(newGroup);
@@ -256,7 +256,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         status: 'ACTIVE',
         groupType: 'ON_CALL',
         description: 'Updated description',
-        created: '2024-01-01T00:00:00.000Z',
+        created: '2025-01-01T00:00:00.000Z',
       };
       mockHttpClient.setReqRes([{
         expectedRequest: {
@@ -276,7 +276,7 @@ Deno.test('GroupsEndpoint', async (t) => {
 
     await t.step('makes POST request with minimal group data for creation', async () => {
       const minimalGroup = {
-        targetName: 'Minimal Group',
+        targetName: mockSingleGroupBody.targetName,
       };
       mockHttpClient.setReqRes([{
         expectedRequest: {
@@ -288,7 +288,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 201,
           headers: { 'content-type': 'application/json' },
-          body: mockSingleGroupResponse,
+          body: mockSingleGroupBody,
         },
       }]);
       await groups.save(minimalGroup);
@@ -296,8 +296,8 @@ Deno.test('GroupsEndpoint', async (t) => {
 
     await t.step('makes POST request with custom headers', async () => {
       const newGroup = {
-        targetName: 'New Group',
-        recipientType: 'GROUP',
+        targetName: mockSingleGroupBody.targetName,
+        recipientType: mockSingleGroupBody.recipientType,
       };
       mockHttpClient.setReqRes([{
         expectedRequest: {
@@ -312,7 +312,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 201,
           headers: { 'content-type': 'application/json' },
-          body: mockSingleGroupResponse,
+          body: mockSingleGroupBody,
         },
       }]);
       await groups.save(newGroup, {
@@ -324,7 +324,7 @@ Deno.test('GroupsEndpoint', async (t) => {
 
     await t.step('makes POST request with dynamic group data', async () => {
       const dynamicGroup = {
-        targetName: 'Dynamic Group',
+        targetName: mockSingleGroupBody.targetName,
         groupType: 'DYNAMIC',
         criteria: {
           operand: 'OR',
@@ -347,7 +347,7 @@ Deno.test('GroupsEndpoint', async (t) => {
         mockedResponse: {
           status: 201,
           headers: { 'content-type': 'application/json' },
-          body: mockSingleGroupResponse,
+          body: mockSingleGroupBody,
         },
       }]);
       await groups.save(dynamicGroup);
@@ -362,11 +362,7 @@ Deno.test('GroupsEndpoint', async (t) => {
           url: 'https://test.xmatters.com/api/xm/1/groups/test-group-id',
           headers: TestConstants.BASIC_AUTH_HEADERS,
         },
-        mockedResponse: {
-          status: 204,
-          headers: {},
-          body: undefined,
-        },
+        mockedResponse: { status: 204 },
       }]);
       await groups.delete('test-group-id');
     });
@@ -381,11 +377,7 @@ Deno.test('GroupsEndpoint', async (t) => {
             'X-Custom-Header': 'custom-value',
           },
         },
-        mockedResponse: {
-          status: 204,
-          headers: {},
-          body: undefined,
-        },
+        mockedResponse: { status: 204 },
       }]);
       await groups.delete('test-group-id', {
         headers: {

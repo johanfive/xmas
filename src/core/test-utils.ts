@@ -23,7 +23,7 @@ import { expect } from 'std/expect/mod.ts';
  */
 interface MockRequestResponse {
   expectedRequest: Partial<HttpRequest>;
-  mockedResponse?: HttpResponse;
+  mockedResponse?: Partial<HttpResponse>;
   /** If provided, the request will throw this error instead of returning a response */
   mockedError?: Error;
 }
@@ -57,7 +57,12 @@ export class MockHttpClient implements HttpClient {
         ),
       );
     }
-    return Promise.resolve(currentPair.mockedResponse);
+    const response: HttpResponse = {
+      status: currentPair.mockedResponse.status || 200,
+      body: currentPair.mockedResponse.body,
+      headers: currentPair.mockedResponse.headers || {},
+    };
+    return Promise.resolve(response);
   }
 
   /**

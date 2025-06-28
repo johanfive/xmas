@@ -12,7 +12,9 @@ The priorities for this project are:
    and other dependencies.
 4. **Type Safety**: The library should be fully type-safe, leveraging TypeScript's capabilities to
    ensure that consumers get the best developer experience. However, use TypeScript features when
-   they add value, not just because you can.
+   they add value, not just because you can. Also there should be zero non-null assertion operators
+   (!) in the entire codebase. Finally, there are very few exceptions to this rule: whenever you
+   feel compelled to explicitly specify `undefined`, use `null` instead.
 5. **Documentation**: The library should be well-documented, with clear examples and usage
    instructions.
 
@@ -40,3 +42,5 @@ To run unit tests, always prompt me to run the following command:
 ```bash
 deno test
 ```
+
+Sometimes the best solution is the one that requires the least code changes
