@@ -35,7 +35,7 @@ export interface HttpRequest {
   headers?: Headers;
   /** Optional request body (injected HTTP client should handle serialization) */
   body?: unknown;
-  /** Current retry attempt number (for logging/debugging by HTTP clients) */
+  /** Current retry attempt number (used by retry mechanism; available for logging/debugging in HTTP clients) */
   retryAttempt?: number;
 }
 
