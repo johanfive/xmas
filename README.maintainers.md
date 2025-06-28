@@ -19,7 +19,10 @@
 - `deno test` - Run all unit tests
 - `deno task cache` - Cache dependencies (handles corporate certificates)
 - `deno task sandbox` - Run sandbox for quick prototyping
-- `deno task sandbox:validate-docs` - You should modify `sandbox/validate-docs.ts` to create AI-generated code that leverages the SDK to validate specific examples and behaviors from the official API documentation. Then, run this command to verify the implementation matches the documented behavior.
+- `deno task sandbox:validate-docs` - You should modify `sandbox/validate-docs.ts` to create
+  AI-generated code that leverages the SDK to validate specific examples and behaviors from the
+  official API documentation. Then, run this command to verify the implementation matches the
+  documented behavior.
 
 **Alternative Commands** (if not behind corporate firewall):
 
