@@ -420,7 +420,6 @@ async function validateEdgeCases() {
     try {
       await xm.groups.get({
         query: {
-          // @ts-expect-error - Testing invalid value
           sortBy: 'INVALID_SORT_FIELD',
           limit: 1,
         },

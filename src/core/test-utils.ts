@@ -184,3 +184,39 @@ export async function withFakeTime(testFn: (fakeTime: FakeTime) => Promise<void>
     fakeTime.restore();
   }
 }
+
+/**
+ * Reusable test constants for endpoint testing
+ */
+export const TestConstants = {
+  /** Standard Basic Auth test configuration for creating RequestHandler instances */
+  BASIC_CONFIG: {
+    hostname: 'https://test.xmatters.com',
+    username: 'testuser',
+    password: 'testpass',
+  } as const,
+
+  /** Default headers used in Basic Auth test requests */
+  BASIC_AUTH_HEADERS: {
+    'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=', // base64 of testuser:testpass
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'User-Agent': 'xmas/0.0.1 (Deno)',
+  } as const,
+
+  /** Standard OAuth test configuration for creating RequestHandler instances */
+  OAUTH_CONFIG: {
+    hostname: 'https://test.xmatters.com',
+    accessToken: 'test-access-token',
+    refreshToken: 'test-refresh-token',
+    clientId: 'test-client-id',
+  } as const,
+
+  /** Default headers used in OAuth test requests */
+  OAUTH_HEADERS: {
+    'Authorization': 'Bearer test-access-token',
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'User-Agent': 'xmas/0.0.1 (Deno)',
+  } as const,
+} as const;

@@ -16,11 +16,25 @@ export interface Group {
   /** The name of the group used for targeting */
   targetName: string;
   /** Type of recipient */
-  recipientType: 'GROUP' | 'DEVICE' | 'PERSON';
+  recipientType:
+    | 'GROUP'
+    | 'DEVICE'
+    | 'PERSON'
+    // deno-lint-ignore ban-types
+    | (string & {}); // Allows for new recipient types to be used with type assertion
   /** Whether the group is active or inactive */
-  status: 'ACTIVE' | 'INACTIVE';
+  status:
+    | 'ACTIVE'
+    | 'INACTIVE'
+    // deno-lint-ignore ban-types
+    | (string & {}); // Allows for new status values to be used with type assertion
   /** The type of group */
-  groupType: 'ON_CALL' | 'BROADCAST' | 'DYNAMIC';
+  groupType:
+    | 'ON_CALL'
+    | 'BROADCAST'
+    | 'DYNAMIC'
+    // deno-lint-ignore ban-types
+    | (string & {}); // Allows for new group types to be used with type assertion
   /** ISO timestamp when the group was created */
   created: string;
   /** Optional description of the group's purpose */
@@ -57,7 +71,12 @@ export interface Group {
 /**
  * Individual search field options that can be combined
  */
-export type GroupSearchField = 'NAME' | 'DESCRIPTION' | 'SERVICE_NAME';
+export type GroupSearchField =
+  | 'NAME'
+  | 'DESCRIPTION'
+  | 'SERVICE_NAME'
+  // deno-lint-ignore ban-types
+  | (string & {}); // Allows for new or undocumented search fields to be used with type assertion
 
 /**
  * Type for filters that can be applied when retrieving groups.
@@ -81,7 +100,12 @@ export interface GroupFilters extends QueryParams {
   /**
    * Specifies the group type to return in the response.
    */
-  groupType?: 'ON_CALL' | 'BROADCAST' | 'DYNAMIC';
+  groupType?:
+    | 'ON_CALL'
+    | 'BROADCAST'
+    | 'DYNAMIC'
+    // deno-lint-ignore ban-types
+    | (string & {}); // Allows for new group types to be used with type assertion
 
   /**
    * The targetName or id of the users, or devices that are members of an on-call or broadcast group.
@@ -95,14 +119,22 @@ export interface GroupFilters extends QueryParams {
    * - ALL_SHIFTS: Returns groups that have no members added to any shifts
    * - ANY_SHIFTS: Returns groups that have at least one shift with no members added to it
    */
-  'member.exists'?: 'ALL_SHIFTS' | 'ANY_SHIFTS';
+  'member.exists'?:
+    | 'ALL_SHIFTS'
+    | 'ANY_SHIFTS'
+    // deno-lint-ignore ban-types
+    | (string & {}); // Allows for new member existence options to be used with type assertion
 
   /**
    * Returns a list of groups that contain at least one member (or a device that belongs to a user)
    * who has the specified license type. The member does not have to be part of any shifts for the
    * group to be included in the response.
    */
-  'member.licenseType'?: 'FULL_USER' | 'STAKEHOLDER_USER';
+  'member.licenseType'?:
+    | 'FULL_USER'
+    | 'STAKEHOLDER_USER'
+    // deno-lint-ignore ban-types
+    | (string & {}); // Allows for new license types to be used with type assertion
 
   /**
    * A comma-separated list of sites whose groups you want to retrieve.
@@ -126,7 +158,12 @@ export interface GroupSortParams {
   /**
    * Field to sort by
    */
-  sortBy?: 'NAME' | 'GROUPTYPE' | 'STATUS';
+  sortBy?:
+    | 'NAME'
+    | 'GROUPTYPE'
+    | 'STATUS'
+    // deno-lint-ignore ban-types
+    | (string & {}); // Allows for new sort fields to be used with type assertion
 
   /**
    * Sort direction
@@ -143,7 +180,9 @@ export type GroupEmbedOptions =
   | 'supervisors' // Up to the first 100 group supervisors (single group) or paginated list (multiple groups)
   | 'observers' // Returns the id and name of the role(s) set as observers for the group
   | 'services' // Returns the list of services owned by the group
-  | 'criteria'; // Returns the criteria specified for dynamic groups (only applicable when groupType=DYNAMIC)
+  | 'criteria' // Returns the criteria specified for dynamic groups (only applicable when groupType=DYNAMIC)
+  // deno-lint-ignore ban-types
+  | (string & {}); // Allows for new or undocumented embed options to be used with type assertion
 
 /**
  * Type for parameters used when retrieving a single group by identifier.
