@@ -124,7 +124,7 @@ For projects that already use axios, you can use the provided adapter function:
 
 ```ts
 import axios from 'axios';
-import { XmApi, createAxiosAdapter } from '@johanfive/xmas';
+import { createAxiosAdapter, XmApi } from '@johanfive/xmas';
 
 // Create your axios instance with whatever config you need
 const axiosInstance = axios.create({
@@ -145,7 +145,8 @@ const config = {
 const xmApi = new XmApi(config);
 ```
 
-> **Note:** Only use this if your project already uses axios. Otherwise, the default HTTP client (fetch) works great with zero dependencies.
+> **Note:** Only use this if your project already uses axios. Otherwise, the default HTTP client
+> (fetch) works great with zero dependencies.
 
 #### Custom Implementation
 
