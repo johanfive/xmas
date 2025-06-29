@@ -118,6 +118,39 @@ clients, loggers, and other dependencies.
 
 If you want to use your own HTTP client implementation:
 
+#### Using the Built-in Axios Adapter
+
+For projects that already use axios, you can use the provided adapter function:
+
+```ts
+import axios from 'axios';
+import { XmApi, createAxiosAdapter } from '@johanfive/xmas';
+
+// Create your axios instance with whatever config you need
+const axiosInstance = axios.create({
+  timeout: 10000,
+  proxy: {
+    host: 'proxy.company.com',
+    port: 8080,
+  },
+});
+
+const config = {
+  hostname: 'https://yourOrg.xmatters.com',
+  username: 'authingUserName',
+  password: 'authingUserPassword',
+  httpClient: createAxiosAdapter(axiosInstance),
+};
+
+const xmApi = new XmApi(config);
+```
+
+> **Note:** Only use this if your project already uses axios. Otherwise, the default HTTP client (fetch) works great with zero dependencies.
+
+#### Custom Implementation
+
+For more advanced use cases, you can implement your own HTTP client:
+
 ```ts
 import type { HttpClient, HttpRequest, HttpResponse } from '@johanfive/xmas';
 

@@ -41,8 +41,27 @@ export interface HttpRequest {
 
 /**
  * Interface that HTTP clients must implement to be used with this library.
+ *
  * This allows consumers to inject their own HTTP implementation.
+ *
+ * HTTP client implementations **MUST**:
+ * - Return responses for all HTTP status codes (do NOT throw on 4xx/5xx errors)
+ * - Handle redirects (3xx) according to HTTP standards (typically automatically)
+ * - Normalize response headers to lowercase keys for consistency
+ * - Parse JSON response bodies when Content-Type indicates JSON
+ *
+ * Network/connectivity errors (DNS resolution, connection refused, timeouts, etc.)
+ * should be allowed to bubble up as-is - the library will catch and wrap them in
+ * XmApiError instances with appropriate context.
  */
 export interface HttpClient {
+  /**
+   * Sends an HTTP request and returns the response.
+   *
+   * @param request - The HTTP request to send
+   * @returns Promise that resolves to the HTTP response
+   * @throws May throw for network/connectivity errors (DNS, connection, timeout, etc.)
+   *         but MUST NOT throw for HTTP error status codes (4xx, 5xx)
+   */
   send: (request: HttpRequest) => Promise<HttpResponse>;
 }
