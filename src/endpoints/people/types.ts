@@ -1,4 +1,3 @@
-import type { PaginatedResponse } from '../../core/types/endpoint/response.ts';
 import type {
   PaginationParams,
   QueryParams,
@@ -319,9 +318,3 @@ export type GetPersonsParams =
   & PersonFilters
   & PersonSortParams
   & GetPersonParams;
-
-/**
- * Response type for methods that return a list of people.
- * This is a paginated response containing an array of Person objects.
- */
-export type GetPersonsResponse = PaginatedResponse<Person>;

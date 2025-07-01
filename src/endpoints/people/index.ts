@@ -1,16 +1,12 @@
 import { ResourceClient } from '../../core/resource-client.ts';
 import type { RequestHandler } from '../../core/request-handler.ts';
-import type { HttpResponse } from '../../core/types/internal/http.ts';
+import type { PaginatedResponse } from '../../core/types/endpoint/response.ts';
 import type {
   DeleteOptions,
   GetOptions,
   RequestWithBodyOptions,
 } from '../../core/types/internal/http-methods.ts';
-import type {
-  EmptyHttpResponse,
-  PaginatedHttpResponse,
-} from '../../core/types/endpoint/response.ts';
-import type { GetPersonParams, GetPersonsParams, GetPersonsResponse, Person } from './types.ts';
+import type { GetPersonParams, GetPersonsParams, Person } from './types.ts';
 
 /**
  * Provides access to the people endpoints of the xMatters API.
@@ -33,8 +29,8 @@ export class PersonsEndpoint {
    */
   get(
     options?: Omit<GetOptions, 'path'> & { path?: string; query?: GetPersonsParams },
-  ): Promise<PaginatedHttpResponse<Person>> {
-    return this.http.get<GetPersonsResponse>(options);
+  ) {
+    return this.http.get<PaginatedResponse<Person>>(options);
   }
 
   /**
@@ -48,7 +44,7 @@ export class PersonsEndpoint {
   getByIdentifier(
     identifier: string,
     options?: Omit<GetOptions, 'path'> & { query?: GetPersonParams },
-  ): Promise<HttpResponse<Person>> {
+  ) {
     return this.http.get<Person>({ ...options, path: identifier });
   }
 
@@ -63,7 +59,7 @@ export class PersonsEndpoint {
   save(
     person: Partial<Person>,
     overrides?: Omit<RequestWithBodyOptions, 'path'>,
-  ): Promise<HttpResponse<Person>> {
+  ) {
     return this.http.post<Person>({ ...overrides, body: person });
   }
 
@@ -78,7 +74,7 @@ export class PersonsEndpoint {
   delete(
     id: string,
     overrides?: Omit<DeleteOptions, 'path'>,
-  ): Promise<EmptyHttpResponse> {
+  ) {
     return this.http.delete<void>({ ...overrides, path: id });
   }
 }

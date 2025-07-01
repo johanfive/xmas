@@ -1,4 +1,3 @@
-import type { PaginatedResponse } from '../../core/types/endpoint/response.ts';
 import type {
   PaginationParams,
   QueryParams,
@@ -209,7 +208,13 @@ export type GetGroupsParams =
   & GetGroupParams;
 
 /**
- * Response type for methods that return a list of groups.
- * This is a paginated response containing an array of Group objects.
+ * Group quotas object returned by /groups/license-quotas
  */
-export type GetGroupsResponse = PaginatedResponse<Group>;
+export interface GroupQuotas {
+  groupQuotaEnabled: boolean;
+  groups: {
+    total: number;
+    active: number;
+    unused: number;
+  };
+}

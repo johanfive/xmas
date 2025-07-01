@@ -34,4 +34,4 @@ export type { HttpClient } from './core/types/internal/http.ts';
 // Export error class - consumers need to catch and handle these
 export { XmApiError } from './core/errors.ts';
 // For convenience
-export { createAxiosAdapter } from './core/defaults/index.ts';
+export { axiosAdapter } from './core/defaults/index.ts';

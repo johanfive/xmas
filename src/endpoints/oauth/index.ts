@@ -1,6 +1,5 @@
 import type { RequestHandler } from '../../core/request-handler.ts';
 import type { OAuth2TokenResponse } from '../../core/types/internal/oauth.ts';
-import type { HttpResponse } from '../../core/types/internal/http.ts';
 import { XmApiError } from '../../core/errors.ts';
 
 export class OAuthEndpoint {
@@ -21,7 +20,7 @@ export class OAuthEndpoint {
    */
   async obtainTokens(
     options: { clientId?: string; clientSecret?: string } = {},
-  ): Promise<HttpResponse<OAuth2TokenResponse>> {
+  ) {
     const { clientId, clientSecret } = options;
     const authState = this.http.getCurrentAuthState();
     switch (authState.type) {
@@ -62,7 +61,7 @@ export class OAuthEndpoint {
    */
   private async getOAuthToken(
     options: { payload: string; clientId: string },
-  ): Promise<HttpResponse<OAuth2TokenResponse>> {
+  ) {
     const { payload, clientId } = options;
     const response = await this.http.post<OAuth2TokenResponse>({
       path: '/oauth2/token',
@@ -95,7 +94,7 @@ export class OAuthEndpoint {
       clientId?: string;
       clientSecret?: string;
     },
-  ): Promise<HttpResponse<OAuth2TokenResponse>> {
+  ) {
     const { username, password, clientId, clientSecret } = options;
     if (!clientId) {
       throw new XmApiError(
@@ -128,7 +127,7 @@ export class OAuthEndpoint {
       clientId: string;
       clientSecret?: string;
     },
-  ): Promise<HttpResponse<OAuth2TokenResponse>> {
+  ) {
     const { authorizationCode, clientId, clientSecret } = options;
     const payload = this.buildFormData({
       grant_type: 'authorization_code',

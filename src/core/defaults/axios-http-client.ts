@@ -31,7 +31,7 @@ interface AxiosLike {
  *
  * ```typescript
  * import axios from 'axios';
- * import { createAxiosAdapter, XmApi } from 'xmas';
+ * import { axiosAdapter, XmApi } from 'xmas';
  *
  * // Create your axios instance with whatever config you need
  * const axiosInstance = axios.create({
@@ -43,14 +43,14 @@ interface AxiosLike {
  *   hostname: 'your-instance.xmatters.com',
  *   username: 'your-username',
  *   password: 'your-password',
- *   httpClient: createAxiosAdapter(axiosInstance),
+ *   httpClient: axiosAdapter(axiosInstance),
  * });
  * ```
  *
  * @param axiosInstance - Your existing axios instance
  * @returns HttpClient that wraps the axios instance
  */
-export function createAxiosAdapter(axiosInstance: AxiosLike): HttpClient {
+export function axiosAdapter(axiosInstance: AxiosLike): HttpClient {
   return {
     async send(request: HttpRequest): Promise<HttpResponse> {
       const response = await axiosInstance({
