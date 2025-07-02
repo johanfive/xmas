@@ -299,6 +299,7 @@ Deno.test('PersonsEndpoint', async (t) => {
             self: '/api/xm/1/sites/site-id',
           },
         },
+        roles: ['STANDARD_USER'],
       };
       mockHttpClient.setReqRes([{
         expectedRequest: {
@@ -357,6 +358,7 @@ Deno.test('PersonsEndpoint', async (t) => {
         targetName: mockSinglePersonBody.targetName,
         firstName: mockSinglePersonBody.firstName,
         lastName: mockSinglePersonBody.lastName,
+        roles: ['STANDARD_USER'],
       };
       mockHttpClient.setReqRes([{
         expectedRequest: {
@@ -380,6 +382,7 @@ Deno.test('PersonsEndpoint', async (t) => {
         firstName: mockSinglePersonBody.firstName,
         lastName: mockSinglePersonBody.lastName,
         recipientType: mockSinglePersonBody.recipientType,
+        roles: ['STANDARD_USER'],
       };
       mockHttpClient.setReqRes([{
         expectedRequest: {
@@ -409,6 +412,7 @@ Deno.test('PersonsEndpoint', async (t) => {
         targetName: mockSinglePersonBody.targetName,
         firstName: mockSinglePersonBody.firstName,
         lastName: mockSinglePersonBody.lastName,
+        roles: ['STANDARD_USER'],
         properties: {
           department: 'Engineering',
           location: 'New York',

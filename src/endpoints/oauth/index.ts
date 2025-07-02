@@ -1,4 +1,5 @@
 import type { RequestHandler } from '../../core/request-handler.ts';
+import type { HttpResponse } from '../../core/types/internal/http.ts';
 import type { OAuth2TokenResponse } from '../../core/types/internal/oauth.ts';
 import { XmApiError } from '../../core/errors.ts';
 
@@ -20,7 +21,7 @@ export class OAuthEndpoint {
    */
   async obtainTokens(
     options: { clientId?: string; clientSecret?: string } = {},
-  ) {
+  ): Promise<HttpResponse<OAuth2TokenResponse>> {
     const { clientId, clientSecret } = options;
     const authState = this.http.getCurrentAuthState();
     switch (authState.type) {

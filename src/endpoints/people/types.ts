@@ -72,6 +72,21 @@ export interface Person {
   };
 }
 
+export type PersonRole =
+  | 'Standard User'
+  // deno-lint-ignore ban-types
+  | (string & {});
+export type PersonRoles = PersonRole | PersonRole[];
+
+export type CreatePerson =
+  & Required<{ roles: PersonRoles } & Pick<Person, 'targetName' | 'firstName' | 'lastName'>>
+  & Partial<Omit<Person, 'id'>>;
+
+export type UpdatePerson =
+  & Required<Pick<Person, 'id'>>
+  & Partial<Person>
+  & { roles?: PersonRoles };
+
 /**
  * Individual search field options that can be combined
  */

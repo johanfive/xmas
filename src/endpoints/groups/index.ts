@@ -1,6 +1,10 @@
 import { ResourceClient } from '../../core/resource-client.ts';
 import type { RequestHandler } from '../../core/request-handler.ts';
-import type { PaginatedResponse } from '../../core/types/endpoint/response.ts';
+import type { HttpResponse } from '../../core/types/internal/http.ts';
+import type {
+  PaginatedHttpResponse,
+  PaginatedResponse,
+} from '../../core/types/endpoint/response.ts';
 import type {
   DeleteOptions,
   GetOptions,
@@ -28,7 +32,9 @@ export class GroupsEndpoint {
    * @returns The HTTP response containing a paginated list of groups
    * @throws {XmApiError} If the request fails
    */
-  get(options?: Omit<GetOptions, 'path'> & { path?: string; query?: GetGroupsParams }) {
+  get(
+    options?: Omit<GetOptions, 'path'> & { path?: string; query?: GetGroupsParams },
+  ): Promise<PaginatedHttpResponse<Group>> {
     return this.http.get<PaginatedResponse<Group>>(options);
   }
 
@@ -40,7 +46,10 @@ export class GroupsEndpoint {
    * @returns The HTTP response containing a paginated list of supervisors (Person objects)
    * @throws {XmApiError} If the request fails
    */
-  getSupervisors(groupId: string, options?: Omit<GetOptions, 'path'>) {
+  getSupervisors(
+    groupId: string,
+    options?: Omit<GetOptions, 'path'>,
+  ): Promise<PaginatedHttpResponse<Person>> {
     return this.http.get<PaginatedResponse<Person>>({ ...options, path: `${groupId}/supervisors` });
   }
 
@@ -52,7 +61,10 @@ export class GroupsEndpoint {
    * @returns The HTTP response containing a paginated list of recipients (Person objects)
    * @throws {XmApiError} If the request fails
    */
-  getRecipients(groupId: string, options?: Omit<GetOptions, 'path'>) {
+  getRecipients(
+    groupId: string,
+    options?: Omit<GetOptions, 'path'>,
+  ): Promise<PaginatedHttpResponse<Person>> {
     return this.http.get<PaginatedResponse<Person>>({ ...options, path: `${groupId}/recipients` });
   }
 
@@ -63,7 +75,7 @@ export class GroupsEndpoint {
    * @returns The HTTP response containing the group license quotas
    * @throws {XmApiError} If the request fails
    */
-  getLicenseQuotas(options?: Omit<GetOptions, 'path'>) {
+  getLicenseQuotas(options?: Omit<GetOptions, 'path'>): Promise<HttpResponse<GroupQuotas>> {
     return this.http.get<GroupQuotas>({ ...options, path: 'license-quotas' });
   }
 
@@ -78,7 +90,7 @@ export class GroupsEndpoint {
   getByIdentifier(
     identifier: string,
     options?: Omit<GetOptions, 'path'> & { query?: GetGroupParams },
-  ) {
+  ): Promise<HttpResponse<Group>> {
     return this.http.get<Group>({ ...options, path: identifier });
   }
 
@@ -90,7 +102,10 @@ export class GroupsEndpoint {
    * @returns The HTTP response containing the created or updated group
    * @throws {XmApiError} If the request fails
    */
-  save(group: Partial<Group>, overrides?: Omit<RequestWithBodyOptions, 'path'>) {
+  save(
+    group: Partial<Group>,
+    overrides?: Omit<RequestWithBodyOptions, 'path'>,
+  ): Promise<HttpResponse<Group>> {
     return this.http.post<Group>({ ...overrides, body: group });
   }
 
@@ -102,7 +117,7 @@ export class GroupsEndpoint {
    * @returns The HTTP response
    * @throws {XmApiError} If the request fails
    */
-  delete(id: string, overrides?: Omit<DeleteOptions, 'path'>) {
-    return this.http.delete<void>({ ...overrides, path: id });
+  delete(id: string, overrides?: Omit<DeleteOptions, 'path'>): Promise<HttpResponse<Group>> {
+    return this.http.delete<Group>({ ...overrides, path: id });
   }
 }
