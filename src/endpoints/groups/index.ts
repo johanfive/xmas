@@ -10,7 +10,14 @@ import type {
   GetOptions,
   RequestWithBodyOptions,
 } from '../../core/types/internal/http-methods.ts';
-import type { GetGroupParams, GetGroupsParams, Group, GroupQuotas } from './types.ts';
+import type {
+  CreateGroup,
+  GetGroupParams,
+  GetGroupsParams,
+  Group,
+  GroupQuotas,
+  UpdateGroup,
+} from './types.ts';
 import type { Person } from '../people/types.ts';
 
 /**
@@ -103,7 +110,7 @@ export class GroupsEndpoint {
    * @throws {XmApiError} If the request fails
    */
   save(
-    group: Partial<Group>,
+    group: CreateGroup | UpdateGroup,
     overrides?: Omit<RequestWithBodyOptions, 'path'>,
   ): Promise<HttpResponse<Group>> {
     return this.http.post<Group>({ ...overrides, body: group });

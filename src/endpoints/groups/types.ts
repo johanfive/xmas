@@ -68,6 +68,16 @@ export interface Group {
 }
 
 /**
+ * Type for creating a group. Must NOT include `id`.
+ */
+export type CreateGroup = Required<Pick<Group, 'targetName'>> & Partial<Omit<Group, 'id'>>;
+
+/**
+ * Type for updating a group. MUST include `id`.
+ */
+export type UpdateGroup = Required<Pick<Group, 'id'>> & Partial<Group>;
+
+/**
  * Individual search field options that can be combined
  */
 export type GroupSearchField =
