@@ -4,7 +4,7 @@ import type {
   SearchParams,
   SortOrder,
   StatusParams,
-} from '../../core/types/endpoint/params.ts';
+} from '../../core/types/endpoint/query-params.ts';
 
 /**
  * Represents a person in xMatters.

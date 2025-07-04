@@ -2,6 +2,7 @@ import type { RequestHandler } from '../../core/request-handler.ts';
 import type { HttpResponse } from '../../core/types/internal/http.ts';
 import type { OAuth2TokenResponse } from '../../core/types/internal/oauth.ts';
 import { XmApiError } from '../../core/errors.ts';
+import { AuthType } from '../../core/types/internal/mutable-auth-state.ts';
 
 export class OAuthEndpoint {
   constructor(
@@ -25,7 +26,7 @@ export class OAuthEndpoint {
     const { clientId, clientSecret } = options;
     const authState = this.http.getCurrentAuthState();
     switch (authState.type) {
-      case 'basic': {
+      case AuthType.BASIC: {
         return await this.getOAuthTokenByPassword({
           username: authState.username,
           password: authState.password,
@@ -33,7 +34,7 @@ export class OAuthEndpoint {
           clientSecret,
         });
       }
-      case 'authCode': {
+      case AuthType.AUTH_CODE: {
         const resolvedClientSecret = clientSecret || authState.clientSecret;
         return await this.getOAuthTokenByAuthorizationCode({
           authorizationCode: authState.authorizationCode,
@@ -41,7 +42,7 @@ export class OAuthEndpoint {
           clientSecret: resolvedClientSecret,
         });
       }
-      case 'oauth': {
+      case AuthType.OAUTH: {
         throw new XmApiError('Already have OAuth tokens - no need to call obtainTokens()');
       }
       default: {

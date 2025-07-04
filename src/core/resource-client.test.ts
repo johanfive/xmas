@@ -241,8 +241,6 @@ Deno.test('ResourceClient', async (t) => {
         },
         mockedResponse: {
           status: 204,
-          headers: {},
-          body: '',
         },
       }]);
       await client.delete({ path: '123' });

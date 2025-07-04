@@ -18,15 +18,32 @@ import { FakeTime } from 'std/testing/time.ts';
 import { expect } from 'std/expect/mod.ts';
 
 /**
+ * Request-response pair for testing - HTTP response case
+ * Set up expected requests and their mocked HTTP responses (any status code).
+ */
+interface MockRequestWithResponse {
+  expectedRequest: Partial<HttpRequest>;
+  mockedResponse: Partial<HttpResponse>;
+}
+
+/**
+ * Request-response pair for testing - error case
+ * Set up expected requests and their mocked errors.
+ * This is used to simulate network errors or API failures.
+ * The error will be thrown when the request is made.
+ * (!) Not to be confused with HTTP error responses
+ * (like 404, 500, etc.) which are still HTTP responses.
+ */
+interface MockRequestError {
+  expectedRequest: Partial<HttpRequest>;
+  mockedError: Error;
+}
+
+/**
  * Request-response pair for testing
  * Set up expected requests and their mocked responses or errors.
  */
-interface MockRequestResponse {
-  expectedRequest: Partial<HttpRequest>;
-  mockedResponse?: Partial<HttpResponse>;
-  /** If provided, the request will throw this error instead of returning a response */
-  mockedError?: Error;
-}
+type MockRequestResponse = MockRequestWithResponse | MockRequestError;
 
 /**
  * Mock HTTP client that prevents network calls during tests.
@@ -47,20 +64,26 @@ export class MockHttpClient implements HttpClient {
     }
     const currentPair = this.requestResponsePairs[this.requests.length - 1];
     this.validateRequest(request, currentPair.expectedRequest);
-    if (currentPair.mockedError) {
+
+    // Handle error case
+    if ('mockedError' in currentPair) {
       return Promise.reject(currentPair.mockedError);
     }
-    if (!currentPair.mockedResponse) {
+
+    // Validate response case has required response
+    if (!('mockedResponse' in currentPair) || !currentPair.mockedResponse) {
       return Promise.reject(
         new Error(
-          `MockHttpClient: Request #${this.requests.length} must have either mockedResponse or mockedError`,
+          `MockHttpClient: Request #${this.requests.length} must have either mockedError or mockedResponse`,
         ),
       );
     }
+
+    // Handle response case
     const response: HttpResponse = {
       status: currentPair.mockedResponse.status || 200,
       body: currentPair.mockedResponse.body,
-      headers: currentPair.mockedResponse.headers || {},
+      headers: currentPair.mockedResponse.headers,
     };
     return Promise.resolve(response);
   }

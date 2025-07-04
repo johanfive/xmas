@@ -1,5 +1,5 @@
 import type { Headers, HttpRequest } from './types/internal/http.ts';
-import type { QueryParams } from './types/endpoint/params.ts';
+import type { QueryParams } from './types/endpoint/query-params.ts';
 import { XmApiError } from './errors.ts';
 
 /**
@@ -84,7 +84,7 @@ export class RequestBuilder {
       // Start with the base API URL, then manually append the path to preserve encoding
       // The xMatters API isn't always consistent in its accepting of
       // both encoded and non-encoded identifiers in paths.
-      // e.g. xm.groups.getByIdentifier('dd comics') === xm.groups.getByIdentifier('dd%20comics')
+      // e.g. xm.groups.getByIdentifier('dc comics') === xm.groups.getByIdentifier('dc%20comics')
       // but xm.people.getByIdentifier('lol@test.com') !== xm.people.getByIdentifier('lol%40test.com')
       // The latter will return a 404 Not Found error.
       // So we always use the path as-is, without encoding it.

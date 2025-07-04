@@ -7,7 +7,7 @@ import {
   type TokenRefreshCallback,
   type XmApiConfig,
 } from './types/internal/config.ts';
-import type { MutableAuthState } from './types/internal/auth-state.ts';
+import { AuthType, type MutableAuthState } from './types/internal/mutable-auth-state.ts';
 import type {
   DeleteOptions,
   GetOptions,
@@ -44,20 +44,20 @@ export class RequestHandler {
     // Initialize mutable auth state based on config type
     if (isBasicAuthConfig(initialConfig)) {
       this.mutableAuthState = {
-        type: 'basic',
+        type: AuthType.BASIC,
         username: initialConfig.username,
         password: initialConfig.password,
       };
     } else if (isOAuthConfig(initialConfig)) {
       this.mutableAuthState = {
-        type: 'oauth',
+        type: AuthType.OAUTH,
         accessToken: initialConfig.accessToken,
         refreshToken: initialConfig.refreshToken,
         clientId: initialConfig.clientId,
       };
     } else if (isAuthCodeConfig(initialConfig)) {
       this.mutableAuthState = {
-        type: 'authCode',
+        type: AuthType.AUTH_CODE,
         authorizationCode: initialConfig.authorizationCode,
         clientId: initialConfig.clientId,
         clientSecret: initialConfig.clientSecret,
@@ -83,7 +83,7 @@ export class RequestHandler {
     request: RequestBuildOptions,
   ): Promise<HttpResponse<T>> {
     // Check if token refresh is needed before making the request
-    if (this.mutableAuthState.type === 'oauth' && this.isTokenExpired()) {
+    if (this.mutableAuthState.type === AuthType.OAUTH && this.isTokenExpired()) {
       await this.refreshAccessToken();
     }
     const fullRequest = this.requestBuilder.build(request);
@@ -104,7 +104,7 @@ export class RequestHandler {
         // Handle OAuth token expiry/refresh first
         if (
           response.status === 401 &&
-          this.mutableAuthState.type === 'oauth' &&
+          this.mutableAuthState.type === AuthType.OAUTH &&
           currentAttempt === 0
         ) {
           await this.refreshAccessToken();
@@ -123,7 +123,7 @@ export class RequestHandler {
           const delay = this.exponentialBackoff(currentAttempt);
           // Respect Retry-After header for rate limits if present
           let finalDelay = delay;
-          if (response.status === 429 && response.headers['retry-after']) {
+          if (response.status === 429 && response.headers?.['retry-after']) {
             const retryAfter = parseInt(response.headers['retry-after'], 10);
             if (!isNaN(retryAfter)) {
               finalDelay = retryAfter * 1000;
@@ -190,10 +190,10 @@ export class RequestHandler {
    * Creates the authorization header value based on the authentication type
    */
   private createAuthHeader(): string | undefined {
-    if (this.mutableAuthState.type === 'oauth') {
+    if (this.mutableAuthState.type === AuthType.OAUTH) {
       return `Bearer ${this.mutableAuthState.accessToken}`;
     }
-    if (this.mutableAuthState.type === 'basic') {
+    if (this.mutableAuthState.type === AuthType.BASIC) {
       // In Deno, we use TextEncoder for proper UTF-8 encoding
       const encoder = new TextEncoder();
       const authString = `${this.mutableAuthState.username}:${this.mutableAuthState.password}`;
@@ -204,7 +204,7 @@ export class RequestHandler {
 
   private async refreshAccessToken(): Promise<void> {
     try {
-      if (this.mutableAuthState.type !== 'oauth') {
+      if (this.mutableAuthState.type !== AuthType.OAUTH) {
         throw new XmApiError('No OAuth configuration available for token refresh');
       }
       const params = new URLSearchParams({
@@ -249,7 +249,7 @@ export class RequestHandler {
    */
   async handleNewOAuthTokens(tokenResponse: OAuth2TokenResponse, clientId: string): Promise<void> {
     this.mutableAuthState = {
-      type: 'oauth',
+      type: AuthType.OAUTH,
       accessToken: tokenResponse.access_token,
       refreshToken: tokenResponse.refresh_token,
       clientId: clientId,
@@ -279,7 +279,7 @@ export class RequestHandler {
   }
 
   private isTokenExpired(): boolean {
-    if (this.mutableAuthState.type !== 'oauth') return false;
+    if (this.mutableAuthState.type !== AuthType.OAUTH) return false;
     // If we don't have expiration info, assume it's valid
     // since consumers likely cache tokens and we don't want to
     // prematurely refresh tokens that are probably still good.

@@ -18,7 +18,7 @@ export interface HttpResponse<T = unknown> {
   /** The HTTP status code */
   status: number;
   /** Response headers */
-  headers: Headers;
+  headers?: Headers;
 }
 
 /**

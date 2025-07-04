@@ -1,4 +1,4 @@
-import type { Headers } from './types/internal/http.ts';
+import type { HttpResponse } from './types/internal/http.ts';
 
 /**
  * Base class for all errors thrown by the xMatters API client.
@@ -22,14 +22,7 @@ export class XmApiError extends Error {
    */
   constructor(
     message: string,
-    public readonly response?: {
-      /** The response body in its original format */
-      body: unknown;
-      /** The HTTP status code that triggered this error */
-      status: number;
-      /** Response headers that may contain additional error context */
-      headers: Headers;
-    } | null,
+    public readonly response?: HttpResponse | null,
     public override readonly cause?: unknown,
   ) {
     // Use custom message if provided and meaningful, otherwise extract from response

@@ -1,5 +1,6 @@
 import { XmApiError } from '../errors.ts';
 import type { XmApiConfig } from '../types/internal/config.ts';
+import { isAuthCodeConfig, isBasicAuthConfig, isOAuthConfig } from '../types/internal/config.ts';
 
 /**
  * Validates that a hostname is a valid xMatters hostname.
@@ -42,9 +43,9 @@ export function validateConfig(config: XmApiConfig): void {
     }
   }
   // 4. Determine which auth methods are present
-  const hasBasicAuth = 'username' in config && 'password' in config;
-  const hasAuthCode = 'authorizationCode' in config;
-  const hasOAuthTokens = 'accessToken' in config && 'refreshToken' in config;
+  const hasBasicAuth = isBasicAuthConfig(config);
+  const hasAuthCode = isAuthCodeConfig(config);
+  const hasOAuthTokens = isOAuthConfig(config);
   const configCount = [hasBasicAuth, hasAuthCode, hasOAuthTokens].filter(Boolean).length;
   // 5. Validate exactly one auth method is provided
   if (configCount === 0) {

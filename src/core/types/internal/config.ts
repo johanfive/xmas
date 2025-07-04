@@ -29,7 +29,7 @@ export type TokenRefreshCallback = (
 /**
  * Base configuration options shared by all authentication methods.
  */
-export interface XmApiBaseConfig {
+interface XmApiBaseConfig {
   hostname: string;
   httpClient?: HttpClient;
   logger?: Logger;
@@ -42,7 +42,7 @@ export interface XmApiBaseConfig {
  * Basic auth configuration (can transition to OAuth).
  * No clientId field - this is pure basic auth.
  */
-export interface BasicAuthConfig extends XmApiBaseConfig {
+interface BasicAuthConfig extends XmApiBaseConfig {
   username: string;
   password: string;
 }
@@ -51,7 +51,7 @@ export interface BasicAuthConfig extends XmApiBaseConfig {
  * Auth code configuration (must call obtainTokens before API calls).
  * ClientId is required - no discovery path.
  */
-export interface AuthCodeConfig extends XmApiBaseConfig {
+interface AuthCodeConfig extends XmApiBaseConfig {
   authorizationCode: string; // Changed from authCode to match xMatters API
   clientId: string;
   clientSecret?: string; // Optional client secret for enhanced security
@@ -61,7 +61,7 @@ export interface AuthCodeConfig extends XmApiBaseConfig {
  * OAuth configuration (ready for API calls).
  * All OAuth fields are required.
  */
-export interface OAuthConfig extends XmApiBaseConfig {
+interface OAuthConfig extends XmApiBaseConfig {
   accessToken: string;
   refreshToken: string;
   clientId: string;
