@@ -1,5 +1,5 @@
 import { expect } from 'std/expect/mod.ts';
-import { MockHttpClient, MockLogger, withFakeTime } from './core/test-utils.ts';
+import { MockHttpClient, MockLogger, withFakeTime } from 'core/test-utils.ts';
 import { XmApi, XmApiError } from './index.ts';
 
 const mockHttpClient = new MockHttpClient();

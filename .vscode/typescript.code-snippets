@@ -3,7 +3,7 @@
     "prefix": "xm-endpoint",
     "description": "Generate a complete endpoint index.ts file",
     "body": [
-      "import { ResourceClient } from '../../core/resource-client.ts';",
+      "import { ResourceClient } from 'core/resource-client.ts';",
       "import type {",
       "  Create${1:Resource},",
       "  Get${1:Resource}Params,",
@@ -13,7 +13,7 @@
       "} from './types.ts';",
       "import type { HttpResponse, PaginatedHttpResponse, PaginatedResponse } from 'types/http.ts';",
       "import type { Options } from 'types/request-building-options.ts';",
-      "import type { RequestHandler } from '../../core/request-handler.ts';",
+      "import type { RequestHandler } from 'core/request-handler.ts';",
       "",
       "/**",
       " * Provides access to the ${2:${1/(.*)/${1:/downcase}/}}s endpoints of the xMatters API.",

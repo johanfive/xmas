@@ -2,8 +2,8 @@ import { GroupsEndpoint } from './endpoints/groups/index.ts';
 import { IntegrationsEndpoint } from './endpoints/integrations/index.ts';
 import { OAuthEndpoint } from './endpoints/oauth/index.ts';
 import { PersonsEndpoint } from './endpoints/people/index.ts';
-import { RequestHandler } from './core/request-handler.ts';
-import { validateConfig } from './core/utils/index.ts';
+import { RequestHandler } from 'core/request-handler.ts';
+import { validateConfig } from 'core/utils/index.ts';
 import type { XmApiConfig } from 'types/config.ts';
 
 /**

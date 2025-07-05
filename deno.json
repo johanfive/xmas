@@ -4,7 +4,8 @@
   "exports": "./src/index.ts",
   "imports": {
     "std/": "https://deno.land/std@0.224.0/",
-    "types/": "./src/core/types/"
+    "types/": "./src/core/types/",
+    "core/": "./src/core/"
   },
   "tasks": {
     "cache": "DENO_TLS_CA_STORE=system deno cache --reload src/**/*.ts",

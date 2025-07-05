@@ -1,6 +1,6 @@
-import { MockHttpClient, MockLogger, TestConstants } from '../../core/test-utils.ts';
+import { MockHttpClient, MockLogger, TestConstants } from 'core/test-utils.ts';
 import { PersonsEndpoint } from './index.ts';
-import { RequestHandler } from '../../core/request-handler.ts';
+import { RequestHandler } from 'core/request-handler.ts';
 
 // Shared test infrastructure - MockHttpClient auto-resets between tests
 const mockHttpClient = new MockHttpClient();

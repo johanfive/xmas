@@ -1,4 +1,4 @@
-import { ResourceClient } from '../../core/resource-client.ts';
+import { ResourceClient } from 'core/resource-client.ts';
 import type {
   CreatePerson,
   GetPersonParams,
@@ -8,7 +8,7 @@ import type {
 } from './types.ts';
 import type { HttpResponse, PaginatedHttpResponse, PaginatedResponse } from 'types/http.ts';
 import type { Options } from 'types/request-building-options.ts';
-import type { RequestHandler } from '../../core/request-handler.ts';
+import type { RequestHandler } from 'core/request-handler.ts';
 
 /**
  * Provides access to the people endpoints of the xMatters API.

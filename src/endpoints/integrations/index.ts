@@ -1,6 +1,6 @@
 import type { Headers } from 'types/http.ts';
 import type { HttpResponse } from 'types/http.ts';
-import type { RequestHandler } from '../../core/request-handler.ts';
+import type { RequestHandler } from 'core/request-handler.ts';
 
 /**
  * This class provides a method to trigger an inbound integration by sending a payload

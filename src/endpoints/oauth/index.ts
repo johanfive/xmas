@@ -1,8 +1,8 @@
 import { AuthType } from 'types/mutable-auth-state.ts';
-import { XmApiError } from '../../core/errors.ts';
+import { XmApiError } from 'core/errors.ts';
 import type { HttpResponse } from 'types/http.ts';
 import type { OAuth2TokenResponse } from 'types/oauth.ts';
-import type { RequestHandler } from '../../core/request-handler.ts';
+import type { RequestHandler } from 'core/request-handler.ts';
 
 export class OAuthEndpoint {
   constructor(
