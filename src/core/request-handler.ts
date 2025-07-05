@@ -97,58 +97,51 @@ export class RequestHandler {
         };
       }
     }
-    try {
-      const response = await this.sendWithLogging(fullRequest);
-      if (response.status >= 400) {
-        const currentAttempt = fullRequest.retryAttempt ?? 0;
-        // Handle OAuth token expiry/refresh first
-        if (
-          response.status === 401 &&
-          this.mutableAuthState.type === AuthType.OAUTH &&
-          currentAttempt === 0
-        ) {
-          await this.refreshAccessToken();
-          // Retry the original request with new token
-          return this.send<T>({
-            ...request,
-            retryAttempt: 1,
-          });
-        }
-        // For rate limits (429) or server errors (5xx), retry with exponential backoff
-        if (
-          (response.status === 429 || response.status >= 500) &&
-          currentAttempt < this.maxRetries
-        ) {
-          // Calculate delay based on retry attempt
-          const delay = this.exponentialBackoff(currentAttempt);
-          // Respect Retry-After header for rate limits if present
-          let finalDelay = delay;
-          if (response.status === 429 && response.headers?.['retry-after']) {
-            const retryAfter = parseInt(response.headers['retry-after'], 10);
-            if (!isNaN(retryAfter)) {
-              finalDelay = retryAfter * 1000;
-            }
+    const response = await this.sendWithLogging(fullRequest);
+    if (response.status >= 400) {
+      const currentAttempt = fullRequest.retryAttempt ?? 0;
+      // Handle OAuth token expiry/refresh first
+      if (
+        response.status === 401 &&
+        this.mutableAuthState.type === AuthType.OAUTH &&
+        currentAttempt === 0
+      ) {
+        await this.refreshAccessToken();
+        // Retry the original request with new token
+        return this.send<T>({
+          ...request,
+          retryAttempt: 1,
+        });
+      }
+      // For rate limits (429) or server errors (5xx), retry with exponential backoff
+      if (
+        (response.status === 429 || response.status >= 500) &&
+        currentAttempt < this.maxRetries
+      ) {
+        // Calculate delay based on retry attempt
+        const delay = this.exponentialBackoff(currentAttempt);
+        // Respect Retry-After header for rate limits if present
+        let finalDelay = delay;
+        if (response.status === 429 && response.headers?.['retry-after']) {
+          const retryAfter = parseInt(response.headers['retry-after'], 10);
+          if (!isNaN(retryAfter)) {
+            finalDelay = retryAfter * 1000;
           }
-          this.logger.debug(
-            `Request failed with status ${response.status}, retrying in ${finalDelay}ms (attempt ${
-              currentAttempt + 1
-            }/${this.maxRetries})`,
-          );
-          await new Promise((resolve) => setTimeout(resolve, finalDelay));
-          return this.send<T>({
-            ...request,
-            retryAttempt: currentAttempt + 1,
-          });
         }
-        throw new XmApiError('', response);
+        this.logger.debug(
+          `Request failed with status ${response.status}, retrying in ${finalDelay}ms (attempt ${
+            currentAttempt + 1
+          }/${this.maxRetries})`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, finalDelay));
+        return this.send<T>({
+          ...request,
+          retryAttempt: currentAttempt + 1,
+        });
       }
-      return response as HttpResponse<T>;
-    } catch (error) {
-      if (error instanceof XmApiError) {
-        throw error;
-      }
-      throw new XmApiError('Request failed', null, error);
+      throw new XmApiError('', response);
     }
+    return response as HttpResponse<T>;
   }
 
   get<T>(options: GetOptions): Promise<HttpResponse<T>> {
@@ -173,17 +166,28 @@ export class RequestHandler {
 
   /**
    * Sends an HTTP request with logging.
-   * This wrapper ensures consistent logging across all HTTP calls.
+   * This wrapper ensures consistent logging across all HTTP calls and
+   * guarantees that only XmApiError instances are thrown.
    */
   private async sendWithLogging(
     request: HttpRequest,
   ): Promise<HttpResponse> {
     const startTime = Date.now();
     this.logger.debug(`--> ${request.method} ${request.url}`);
-    const response = await this.client.send(request);
-    const duration = Date.now() - startTime;
-    this.logger.debug(`<-- ${response.status} (${duration}ms)`);
-    return response;
+    try {
+      const response = await this.client.send(request);
+      const duration = Date.now() - startTime;
+      this.logger.debug(`<-- ${response.status} (${duration}ms)`);
+      return response;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      this.logger.debug(`<-- ERROR (${duration}ms)`);
+      // Only wrap if not already an XmApiError to avoid double-wrapping
+      if (error instanceof XmApiError) {
+        throw error;
+      }
+      throw new XmApiError('Request failed', null, error);
+    }
   }
 
   /**
