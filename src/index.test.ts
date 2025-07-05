@@ -93,7 +93,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
           expectedRequest: {
             method: 'POST',
             url: 'https://test.xmatters.com/api/xm/1/oauth2/token',
-            headers: TestConstants.TOKEN_REFRESH_REQUEST_HEADERS,
+            headers: TestConstants.TOKEN_REQUEST_HEADERS,
             body:
               'grant_type=refresh_token&refresh_token=valid-refresh-token&client_id=test-client-id',
           },
@@ -176,7 +176,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
           expectedRequest: {
             method: 'POST',
             url: 'https://test.xmatters.com/api/xm/1/oauth2/token',
-            headers: TestConstants.TOKEN_REFRESH_REQUEST_HEADERS,
+            headers: TestConstants.TOKEN_REQUEST_HEADERS,
             body:
               'grant_type=refresh_token&refresh_token=valid-refresh-token&client_id=test-client-id',
           },
@@ -242,7 +242,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
           expectedRequest: {
             method: 'POST',
             url: 'https://test.xmatters.com/api/xm/1/oauth2/token',
-            headers: TestConstants.TOKEN_REFRESH_REQUEST_HEADERS,
+            headers: TestConstants.TOKEN_REQUEST_HEADERS,
             body:
               'grant_type=refresh_token&refresh_token=invalid-refresh-token&client_id=test-client-id',
           },
@@ -287,7 +287,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
         expectedRequest: {
           method: 'POST',
           url: 'https://test.xmatters.com/api/xm/1/oauth2/token',
-          headers: TestConstants.TOKEN_REFRESH_REQUEST_HEADERS,
+          headers: TestConstants.TOKEN_REQUEST_HEADERS,
           body: 'grant_type=password&client_id=test-client&username=testuser&password=testpass',
         },
         mockedResponse: {

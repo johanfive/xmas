@@ -231,7 +231,7 @@ export const TestConstants = {
     'User-Agent': 'xmas/0.0.1 (Deno)', // Should match version in deno.json
   } as const,
 
-  TOKEN_REFRESH_REQUEST_HEADERS: {
+  TOKEN_REQUEST_HEADERS: {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Accept': 'application/json',
     'User-Agent': 'xmas/0.0.1 (Deno)', // Should match version in deno.json
