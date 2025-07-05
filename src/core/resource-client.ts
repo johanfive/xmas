@@ -1,8 +1,4 @@
-import type {
-  DeleteOptions,
-  GetOptions,
-  RequestWithBodyOptions,
-} from './types/internal/http-methods.ts';
+import type { ResourceOptions } from './types/internal/request-building-options.ts';
 import type { RequestHandler } from './request-handler.ts';
 import { XmApiError } from './errors.ts';
 
@@ -33,35 +29,35 @@ export class ResourceClient {
     return `${this.basePath}/${cleanPath}`;
   }
 
-  get<T>(options?: Omit<GetOptions, 'path'> & { path?: string }) {
+  get<T>(options?: ResourceOptions) {
     return this.http.get<T>({
       ...options,
       path: this.buildPath(options?.path),
     });
   }
 
-  post<T>(options: Omit<RequestWithBodyOptions, 'path'> & { path?: string }) {
+  post<T>(options: ResourceOptions) {
     return this.http.post<T>({
       ...options,
       path: this.buildPath(options.path),
     });
   }
 
-  put<T>(options: Omit<RequestWithBodyOptions, 'path'> & { path?: string }) {
+  put<T>(options: ResourceOptions) {
     return this.http.put<T>({
       ...options,
       path: this.buildPath(options.path),
     });
   }
 
-  patch<T>(options: Omit<RequestWithBodyOptions, 'path'> & { path?: string }) {
+  patch<T>(options: ResourceOptions) {
     return this.http.patch<T>({
       ...options,
       path: this.buildPath(options.path),
     });
   }
 
-  delete<T>(options: Omit<DeleteOptions, 'path'> & { path?: string }) {
+  delete<T>(options: ResourceOptions) {
     return this.http.delete<T>({
       ...options,
       path: this.buildPath(options.path),

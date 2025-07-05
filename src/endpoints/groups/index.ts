@@ -5,11 +5,7 @@ import type {
   PaginatedHttpResponse,
   PaginatedResponse,
 } from '../../core/types/endpoint/response.ts';
-import type {
-  DeleteOptions,
-  GetOptions,
-  RequestWithBodyOptions,
-} from '../../core/types/internal/http-methods.ts';
+import type { Options } from '../../core/types/internal/request-building-options.ts';
 import type {
   CreateGroup,
   GetGroupParams,
@@ -40,7 +36,7 @@ export class GroupsEndpoint {
    * @throws {XmApiError} If the request fails
    */
   get(
-    options?: Omit<GetOptions, 'path'> & { path?: string; query?: GetGroupsParams },
+    options?: Options & { query?: GetGroupsParams },
   ): Promise<PaginatedHttpResponse<Group>> {
     return this.http.get<PaginatedResponse<Group>>(options);
   }
@@ -55,7 +51,7 @@ export class GroupsEndpoint {
    */
   getSupervisors(
     groupId: string,
-    options?: Omit<GetOptions, 'path'>,
+    options?: Options,
   ): Promise<PaginatedHttpResponse<Person>> {
     return this.http.get<PaginatedResponse<Person>>({ ...options, path: `${groupId}/supervisors` });
   }
@@ -70,7 +66,7 @@ export class GroupsEndpoint {
    */
   getRecipients(
     groupId: string,
-    options?: Omit<GetOptions, 'path'>,
+    options?: Options,
   ): Promise<PaginatedHttpResponse<Person>> {
     return this.http.get<PaginatedResponse<Person>>({ ...options, path: `${groupId}/recipients` });
   }
@@ -82,7 +78,7 @@ export class GroupsEndpoint {
    * @returns The HTTP response containing the group license quotas
    * @throws {XmApiError} If the request fails
    */
-  getLicenseQuotas(options?: Omit<GetOptions, 'path'>): Promise<HttpResponse<GroupQuotas>> {
+  getLicenseQuotas(options?: Options): Promise<HttpResponse<GroupQuotas>> {
     return this.http.get<GroupQuotas>({ ...options, path: 'license-quotas' });
   }
 
@@ -96,7 +92,7 @@ export class GroupsEndpoint {
    */
   getByIdentifier(
     identifier: string,
-    options?: Omit<GetOptions, 'path'> & { query?: GetGroupParams },
+    options?: Options & { query?: GetGroupParams },
   ): Promise<HttpResponse<Group>> {
     return this.http.get<Group>({ ...options, path: identifier });
   }
@@ -105,26 +101,26 @@ export class GroupsEndpoint {
    * Create a new group or update an existing one
    *
    * @param group The group to create or update
-   * @param overrides Optional request overrides like custom headers
+   * @param options Optional request options such as custom headers
    * @returns The HTTP response containing the created or updated group
    * @throws {XmApiError} If the request fails
    */
   save(
     group: CreateGroup | UpdateGroup,
-    overrides?: Omit<RequestWithBodyOptions, 'path'>,
+    options?: Options,
   ): Promise<HttpResponse<Group>> {
-    return this.http.post<Group>({ ...overrides, body: group });
+    return this.http.post<Group>({ ...options, body: group });
   }
 
   /**
    * Delete a group by ID
    *
    * @param id The ID of the group to delete
-   * @param overrides Optional request overrides like custom headers
+   * @param options Optional request options such as custom headers
    * @returns The HTTP response
    * @throws {XmApiError} If the request fails
    */
-  delete(id: string, overrides?: Omit<DeleteOptions, 'path'>): Promise<HttpResponse<Group>> {
-    return this.http.delete<Group>({ ...overrides, path: id });
+  delete(id: string, options?: Options): Promise<HttpResponse<Group>> {
+    return this.http.delete<Group>({ ...options, path: id });
   }
 }

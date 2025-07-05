@@ -8,14 +8,13 @@ import {
   type XmApiConfig,
 } from './types/internal/config.ts';
 import { AuthType, type MutableAuthState } from './types/internal/mutable-auth-state.ts';
-import type {
-  DeleteOptions,
-  GetOptions,
-  RequestWithBodyOptions,
-} from './types/internal/http-methods.ts';
 import { XmApiError } from './errors.ts';
 import type { OAuth2TokenResponse } from './types/internal/oauth.ts';
-import { RequestBuilder, type RequestBuildOptions } from './request-builder.ts';
+import { RequestBuilder } from './request-builder.ts';
+import type {
+  RequestBuildingOptions,
+  RequestOptions,
+} from './types/internal/request-building-options.ts';
 import { DefaultHttpClient, defaultLogger } from './defaults/index.ts';
 import denoJson from '../../deno.json' with { type: 'json' };
 
@@ -80,7 +79,7 @@ export class RequestHandler {
   }
 
   async send<T>(
-    request: RequestBuildOptions,
+    request: RequestBuildingOptions,
   ): Promise<HttpResponse<T>> {
     // Check if token refresh is needed before making the request
     if (this.mutableAuthState.type === AuthType.OAUTH && this.isTokenExpired()) {
@@ -144,23 +143,23 @@ export class RequestHandler {
     return response as HttpResponse<T>;
   }
 
-  get<T>(options: GetOptions): Promise<HttpResponse<T>> {
-    return this.send<T>(options);
+  get<T>(options: RequestOptions): Promise<HttpResponse<T>> {
+    return this.send<T>({ ...options, method: 'GET' });
   }
 
-  post<T>(options: RequestWithBodyOptions): Promise<HttpResponse<T>> {
+  post<T>(options: RequestOptions): Promise<HttpResponse<T>> {
     return this.send<T>({ ...options, method: 'POST' });
   }
 
-  put<T>(options: RequestWithBodyOptions): Promise<HttpResponse<T>> {
+  put<T>(options: RequestOptions): Promise<HttpResponse<T>> {
     return this.send<T>({ ...options, method: 'PUT' });
   }
 
-  patch<T>(options: RequestWithBodyOptions): Promise<HttpResponse<T>> {
+  patch<T>(options: RequestOptions): Promise<HttpResponse<T>> {
     return this.send<T>({ ...options, method: 'PATCH' });
   }
 
-  delete<T>(options: DeleteOptions): Promise<HttpResponse<T>> {
+  delete<T>(options: RequestOptions): Promise<HttpResponse<T>> {
     return this.send<T>({ ...options, method: 'DELETE' });
   }
 

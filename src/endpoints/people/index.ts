@@ -6,11 +6,7 @@ import type {
   PaginatedHttpResponse,
   PaginatedResponse,
 } from '../../core/types/endpoint/response.ts';
-import type {
-  DeleteOptions,
-  GetOptions,
-  RequestWithBodyOptions,
-} from '../../core/types/internal/http-methods.ts';
+import type { Options } from '../../core/types/internal/request-building-options.ts';
 import type {
   CreatePerson,
   GetPersonParams,
@@ -39,7 +35,7 @@ export class PersonsEndpoint {
    * @throws {XmApiError} If the request fails
    */
   get(
-    options?: Omit<GetOptions, 'path'> & { path?: string; query?: GetPersonsParams },
+    options?: Options & { query?: GetPersonsParams },
   ): Promise<PaginatedHttpResponse<Person>> {
     return this.http.get<PaginatedResponse<Person>>(options);
   }
@@ -54,7 +50,7 @@ export class PersonsEndpoint {
    */
   getByIdentifier(
     identifier: string,
-    options?: Omit<GetOptions, 'path'> & { query?: GetPersonParams },
+    options?: Options & { query?: GetPersonParams },
   ): Promise<HttpResponse<Person>> {
     return this.http.get<Person>({ ...options, path: identifier });
   }
@@ -63,29 +59,29 @@ export class PersonsEndpoint {
    * Create a new person or update an existing one
    *
    * @param person The person to create or update
-   * @param overrides Optional request overrides like custom headers
+   * @param options Optional request options such as custom headers
    * @returns The HTTP response containing the created or updated person
    * @throws {XmApiError} If the request fails
    */
   save(
     person: CreatePerson | UpdatePerson,
-    overrides?: Omit<RequestWithBodyOptions, 'path'>,
+    options?: Options,
   ): Promise<HttpResponse<Person>> {
-    return this.http.post<Person>({ ...overrides, body: person });
+    return this.http.post<Person>({ ...options, body: person });
   }
 
   /**
    * Delete a person by ID
    *
    * @param id The ID of the person to delete
-   * @param overrides Optional request overrides like custom headers
+   * @param options Optional request options such as custom headers
    * @returns The HTTP response
    * @throws {XmApiError} If the request fails
    */
   delete(
     id: string,
-    overrides?: Omit<DeleteOptions, 'path'>,
+    options?: Options,
   ): Promise<EmptyHttpResponse> {
-    return this.http.delete<void>({ ...overrides, path: id });
+    return this.http.delete<void>({ ...options, path: id });
   }
 }

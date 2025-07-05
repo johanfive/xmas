@@ -1,5 +1,6 @@
 import { expect } from 'std/expect/mod.ts';
-import { RequestBuilder, type RequestBuildOptions } from './request-builder.ts';
+import { RequestBuilder } from './request-builder.ts';
+import type { RequestBuildingOptions } from './types/internal/request-building-options.ts';
 import type { Headers } from './types/internal/http.ts';
 import { XmApiError } from './errors.ts';
 
@@ -56,7 +57,7 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('preserves existing query parameters in external URLs', () => {
-      const options: RequestBuildOptions = {
+      const options: RequestBuildingOptions = {
         fullUrl: 'https://api.external-service.com/search?existing=param&another=value',
         query: { additional: 'param', new: 'value' },
       };
@@ -73,7 +74,7 @@ Deno.test('RequestBuilder', async (t) => {
       const { builder: customBuilder } = createRequestBuilderTestSetup({
         hostname: 'https://custom.xmatters.com',
       });
-      const options: RequestBuildOptions = {
+      const options: RequestBuildingOptions = {
         path: '/notifications',
       };
       const request = customBuilder.build(options);
@@ -105,7 +106,7 @@ Deno.test('RequestBuilder', async (t) => {
       const { builder: emptyHeadersBuilder } = createRequestBuilderTestSetup({
         defaultHeaders: {},
       });
-      const options: RequestBuildOptions = {
+      const options: RequestBuildingOptions = {
         path: '/sites',
         headers: { 'Custom-Header': 'value' },
       };
@@ -116,7 +117,7 @@ Deno.test('RequestBuilder', async (t) => {
 
   await t.step('Query Parameter Handling', async (t) => {
     await t.step('handles empty query object', () => {
-      const options: RequestBuildOptions = {
+      const options: RequestBuildingOptions = {
         path: '/devices',
         query: {},
       };
@@ -125,7 +126,7 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('filters out null and undefined query parameters', () => {
-      const options: RequestBuildOptions = {
+      const options: RequestBuildingOptions = {
         path: '/events',
         query: {
           status: 'active',
@@ -143,7 +144,7 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('handles array query parameters by joining with commas', () => {
-      const options: RequestBuildOptions = {
+      const options: RequestBuildingOptions = {
         path: '/groups/123',
         query: {
           embed: ['supervisors', 'services', 'observers'],
@@ -159,7 +160,7 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('handles empty arrays gracefully', () => {
-      const options: RequestBuildOptions = {
+      const options: RequestBuildingOptions = {
         path: '/groups',
         query: {
           embed: [],
@@ -173,7 +174,7 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('handles mixed array types by converting to strings', () => {
-      const options: RequestBuildOptions = {
+      const options: RequestBuildingOptions = {
         path: '/items',
         query: {
           ids: [1, 2, 3],
@@ -191,7 +192,7 @@ Deno.test('RequestBuilder', async (t) => {
 
   await t.step('Default Behavior', async (t) => {
     await t.step('defaults method to GET when not specified', () => {
-      const options: RequestBuildOptions = {
+      const options: RequestBuildingOptions = {
         path: '/users',
       };
       const request = builder.build(options);
@@ -200,7 +201,7 @@ Deno.test('RequestBuilder', async (t) => {
     });
 
     await t.step('preserves retry attempt when provided', () => {
-      const options: RequestBuildOptions = {
+      const options: RequestBuildingOptions = {
         path: '/shifts',
         retryAttempt: 2,
       };
@@ -260,7 +261,7 @@ Deno.test('RequestBuilder', async (t) => {
 
   await t.step('Integration Tests', async (t) => {
     await t.step('builds complex request with all options', () => {
-      const complexOptions: RequestBuildOptions = {
+      const complexOptions: RequestBuildingOptions = {
         path: '/forms/abc123/submissions',
         method: 'PATCH',
         query: {
