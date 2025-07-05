@@ -31,11 +31,10 @@ export class XmApi {
   }
 }
 
-// Re-export only the types consumers need to implement
-// Dependency injection interfaces - consumers implement these
+// Re-export only the types consumers need for configuration
 export type { Logger, TokenRefreshCallback } from 'types/config.ts';
 export type { HttpClient } from 'types/http.ts';
 // Export error class - consumers need to catch and handle these
-export { XmApiError } from './core/errors.ts';
+export { XmApiError } from 'core/errors.ts';
 // For convenience
-export { axiosAdapter } from './core/defaults/index.ts';
+export { axiosAdapter } from 'core/defaults/index.ts';
