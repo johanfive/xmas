@@ -212,7 +212,7 @@ export const TestConstants = {
     'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=', // base64 of testuser:testpass
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'User-Agent': 'xmas/0.0.1 (Deno)',
+    'User-Agent': 'xmas/0.0.1 (Deno)', // Should match version in deno.json
   } as const,
 
   /** Standard OAuth test configuration for creating RequestHandler instances */
@@ -228,6 +228,12 @@ export const TestConstants = {
     'Authorization': 'Bearer test-access-token',
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'User-Agent': 'xmas/0.0.1 (Deno)',
+    'User-Agent': 'xmas/0.0.1 (Deno)', // Should match version in deno.json
+  } as const,
+
+  TOKEN_REFRESH_REQUEST_HEADERS: {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Accept': 'application/json',
+    'User-Agent': 'xmas/0.0.1 (Deno)', // Should match version in deno.json
   } as const,
 } as const;

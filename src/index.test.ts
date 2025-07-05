@@ -1,39 +1,32 @@
 import { expect } from 'std/expect/mod.ts';
-import { MockHttpClient, MockLogger, withFakeTime } from 'core/test-utils.ts';
+import { MockHttpClient, MockLogger, TestConstants, withFakeTime } from 'core/test-utils.ts';
 import { XmApi, XmApiError } from './index.ts';
 
 const mockHttpClient = new MockHttpClient();
 const mockLogger = new MockLogger();
 
+// A basicAuth instance that can be used in many integration test cases
+const runOfTheMillBasicAuthInstance = new XmApi({
+  ...TestConstants.BASIC_CONFIG,
+  httpClient: mockHttpClient,
+  logger: mockLogger,
+});
+
 Deno.test('XmApi Integration Tests', async (t) => {
   await t.step('Authentication', async (t) => {
     await t.step('Basic Auth Integration', async () => {
-      const api = new XmApi({
-        hostname: 'test.xmatters.com',
-        username: 'testuser',
-        password: 'testpass',
-        httpClient: mockHttpClient,
-        logger: mockLogger,
-      });
       // Test a simple GET request
       mockHttpClient.setReqRes([{
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups?limit=10',
-          headers: {
-            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=', // base64 of testuser:testpass
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'xmas/0.0.1 (Deno)',
-          },
+          headers: TestConstants.BASIC_AUTH_HEADERS,
         },
         mockedResponse: {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
           body: { count: 0, total: 0, data: [] },
         },
       }]);
-      const response = await api.groups.get({ query: { limit: 10 } });
+      const response = await runOfTheMillBasicAuthInstance.groups.get({ query: { limit: 10 } });
       expect(response.status).toBe(200);
       expect(response.body.count).toBe(0);
       mockHttpClient.verifyAllRequestsMade();
@@ -41,10 +34,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
 
     await t.step('OAuth Token Integration', async () => {
       const api = new XmApi({
-        hostname: 'test.xmatters.com',
-        accessToken: 'test-access-token',
-        refreshToken: 'test-refresh-token',
-        clientId: 'test-client-id',
+        ...TestConstants.OAUTH_CONFIG,
         httpClient: mockHttpClient,
         logger: mockLogger,
       });
@@ -53,16 +43,9 @@ Deno.test('XmApi Integration Tests', async (t) => {
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
-          headers: {
-            'Authorization': 'Bearer test-access-token',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'xmas/0.0.1 (Deno)',
-          },
+          headers: TestConstants.OAUTH_HEADERS,
         },
         mockedResponse: {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
           body: { count: 1, total: 1, data: [{ id: '123', targetName: 'Test Group' }] },
         },
       }]);
@@ -96,15 +79,12 @@ Deno.test('XmApi Integration Tests', async (t) => {
             method: 'GET',
             url: 'https://test.xmatters.com/api/xm/1/groups',
             headers: {
+              ...TestConstants.OAUTH_HEADERS,
               'Authorization': 'Bearer expired-token',
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'User-Agent': 'xmas/0.0.1 (Deno)',
             },
           },
           mockedResponse: {
             status: 401,
-            headers: { 'Content-Type': 'application/json' },
             body: { error: 'Unauthorized' },
           },
         },
@@ -113,17 +93,11 @@ Deno.test('XmApi Integration Tests', async (t) => {
           expectedRequest: {
             method: 'POST',
             url: 'https://test.xmatters.com/api/xm/1/oauth2/token',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'Accept': 'application/json',
-              'User-Agent': 'xmas/0.0.1 (Deno)',
-            },
+            headers: TestConstants.TOKEN_REFRESH_REQUEST_HEADERS,
             body:
               'grant_type=refresh_token&refresh_token=valid-refresh-token&client_id=test-client-id',
           },
           mockedResponse: {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
             body: {
               access_token: 'new-access-token',
               refresh_token: 'new-refresh-token',
@@ -138,15 +112,11 @@ Deno.test('XmApi Integration Tests', async (t) => {
             method: 'GET',
             url: 'https://test.xmatters.com/api/xm/1/groups',
             headers: {
+              ...TestConstants.OAUTH_HEADERS,
               'Authorization': 'Bearer new-access-token',
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'User-Agent': 'xmas/0.0.1 (Deno)',
             },
           },
           mockedResponse: {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
             body: { count: 1, total: 1, data: [{ id: '123', targetName: 'Test Group' }] },
           },
         },
@@ -192,15 +162,12 @@ Deno.test('XmApi Integration Tests', async (t) => {
             method: 'GET',
             url: 'https://test.xmatters.com/api/xm/1/groups',
             headers: {
+              ...TestConstants.OAUTH_HEADERS,
               'Authorization': 'Bearer expired-token',
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'User-Agent': 'xmas/0.0.1 (Deno)',
             },
           },
           mockedResponse: {
             status: 401,
-            headers: { 'Content-Type': 'application/json' },
             body: { error: 'Unauthorized' },
           },
         },
@@ -209,17 +176,11 @@ Deno.test('XmApi Integration Tests', async (t) => {
           expectedRequest: {
             method: 'POST',
             url: 'https://test.xmatters.com/api/xm/1/oauth2/token',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'Accept': 'application/json',
-              'User-Agent': 'xmas/0.0.1 (Deno)',
-            },
+            headers: TestConstants.TOKEN_REFRESH_REQUEST_HEADERS,
             body:
               'grant_type=refresh_token&refresh_token=valid-refresh-token&client_id=test-client-id',
           },
           mockedResponse: {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
             body: {
               access_token: 'new-access-token',
               refresh_token: 'new-refresh-token',
@@ -234,15 +195,11 @@ Deno.test('XmApi Integration Tests', async (t) => {
             method: 'GET',
             url: 'https://test.xmatters.com/api/xm/1/groups',
             headers: {
+              ...TestConstants.OAUTH_HEADERS,
               'Authorization': 'Bearer new-access-token',
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'User-Agent': 'xmas/0.0.1 (Deno)',
             },
           },
           mockedResponse: {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
             body: { count: 0, total: 0, data: [] },
           },
         },
@@ -270,10 +227,8 @@ Deno.test('XmApi Integration Tests', async (t) => {
             method: 'GET',
             url: 'https://test.xmatters.com/api/xm/1/groups',
             headers: {
+              ...TestConstants.OAUTH_HEADERS,
               'Authorization': 'Bearer expired-token',
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'User-Agent': 'xmas/0.0.1 (Deno)',
             },
           },
           mockedResponse: {
@@ -287,17 +242,12 @@ Deno.test('XmApi Integration Tests', async (t) => {
           expectedRequest: {
             method: 'POST',
             url: 'https://test.xmatters.com/api/xm/1/oauth2/token',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'Accept': 'application/json',
-              'User-Agent': 'xmas/0.0.1 (Deno)',
-            },
+            headers: TestConstants.TOKEN_REFRESH_REQUEST_HEADERS,
             body:
               'grant_type=refresh_token&refresh_token=invalid-refresh-token&client_id=test-client-id',
           },
           mockedResponse: {
             status: 401,
-            headers: { 'Content-Type': 'application/json' },
             // Real error structure from xMatters API (verified via sandbox testing)
             body: { code: 401, message: 'Invalid refresh token', reason: 'Unauthorized' },
           },
@@ -323,9 +273,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
     await t.step('OAuth Token Acquisition', async () => {
       let tokenRefreshCalled = false;
       const api = new XmApi({
-        hostname: 'test.xmatters.com',
-        username: 'testuser',
-        password: 'testpass',
+        ...TestConstants.BASIC_CONFIG,
         httpClient: mockHttpClient,
         logger: mockLogger,
         onTokenRefresh: (accessToken, refreshToken) => {
@@ -339,16 +287,10 @@ Deno.test('XmApi Integration Tests', async (t) => {
         expectedRequest: {
           method: 'POST',
           url: 'https://test.xmatters.com/api/xm/1/oauth2/token',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json',
-            'User-Agent': 'xmas/0.0.1 (Deno)',
-          },
+          headers: TestConstants.TOKEN_REFRESH_REQUEST_HEADERS,
           body: 'grant_type=password&client_id=test-client&username=testuser&password=testpass',
         },
         mockedResponse: {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
           body: {
             access_token: 'obtained-access-token',
             refresh_token: 'obtained-refresh-token',
@@ -361,13 +303,6 @@ Deno.test('XmApi Integration Tests', async (t) => {
       expect(response.status).toBe(200);
       expect(response.body.access_token).toBe('obtained-access-token');
       expect(tokenRefreshCalled).toBe(true);
-      // Validate that the request body contains the expected parameters
-      const request = mockHttpClient.requests[0];
-      const bodyString = request.body as string;
-      expect(bodyString).toContain('grant_type=password');
-      expect(bodyString).toContain('username=testuser');
-      expect(bodyString).toContain('password=testpass');
-      expect(bodyString).toContain('client_id=test-client');
       mockHttpClient.verifyAllRequestsMade();
     });
   });
@@ -375,9 +310,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
   await t.step('HTTP Client & Request Handling', async (t) => {
     await t.step('Custom Headers Integration', async () => {
       const api = new XmApi({
-        hostname: 'test.xmatters.com',
-        username: 'testuser',
-        password: 'testpass',
+        ...TestConstants.BASIC_CONFIG,
         httpClient: mockHttpClient,
         logger: mockLogger,
         defaultHeaders: {
@@ -390,17 +323,12 @@ Deno.test('XmApi Integration Tests', async (t) => {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
           headers: {
-            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'xmas/0.0.1 (Deno)',
+            ...TestConstants.BASIC_AUTH_HEADERS,
             'X-Custom-Header': 'custom-value',
             'X-Client-Version': '1.0.0',
           },
         },
         mockedResponse: {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
           body: { count: 0, total: 0, data: [] },
         },
       }]);
@@ -410,31 +338,17 @@ Deno.test('XmApi Integration Tests', async (t) => {
     });
 
     await t.step('User-Agent Header', async () => {
-      const api = new XmApi({
-        hostname: 'test.xmatters.com',
-        username: 'testuser',
-        password: 'testpass',
-        httpClient: mockHttpClient,
-        logger: mockLogger,
-      });
       mockHttpClient.setReqRes([{
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
-          headers: {
-            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'xmas/0.0.1 (Deno)', // Should match version in deno.json
-          },
+          headers: TestConstants.BASIC_AUTH_HEADERS,
         },
         mockedResponse: {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
           body: { count: 0, total: 0, data: [] },
         },
       }]);
-      const response = await api.groups.get();
+      const response = await runOfTheMillBasicAuthInstance.groups.get();
       expect(response.status).toBe(200);
       mockHttpClient.verifyAllRequestsMade();
     });
@@ -460,9 +374,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
           { level: 'debug', message: /^<-- 200 \(\d+ms\)$/ },
         ]);
         const api = new XmApi({
-          hostname: 'test.xmatters.com',
-          username: 'testuser',
-          password: 'testpass',
+          ...TestConstants.BASIC_CONFIG,
           httpClient: mockHttpClient,
           logger: mockLogger,
           maxRetries: 2,
@@ -473,12 +385,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
             expectedRequest: {
               method: 'GET',
               url: 'https://test.xmatters.com/api/xm/1/groups',
-              headers: {
-                'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'User-Agent': 'xmas/0.0.1 (Deno)',
-              },
+              headers: TestConstants.BASIC_AUTH_HEADERS,
             },
             mockedResponse: {
               status: 429,
@@ -491,12 +398,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
             expectedRequest: {
               method: 'GET',
               url: 'https://test.xmatters.com/api/xm/1/groups',
-              headers: {
-                'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'User-Agent': 'xmas/0.0.1 (Deno)',
-              },
+              headers: TestConstants.BASIC_AUTH_HEADERS,
             },
             mockedResponse: {
               status: 429,
@@ -509,12 +411,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
             expectedRequest: {
               method: 'GET',
               url: 'https://test.xmatters.com/api/xm/1/groups',
-              headers: {
-                'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'User-Agent': 'xmas/0.0.1 (Deno)',
-              },
+              headers: TestConstants.BASIC_AUTH_HEADERS,
             },
             mockedResponse: {
               status: 200,
@@ -559,9 +456,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
           { level: 'debug', message: /^<-- 200 \(\d+ms\)$/ },
         ]);
         const api = new XmApi({
-          hostname: 'test.xmatters.com',
-          username: 'testuser',
-          password: 'testpass',
+          ...TestConstants.BASIC_CONFIG,
           httpClient: mockHttpClient,
           logger: mockLogger,
           maxRetries: 1,
@@ -572,16 +467,10 @@ Deno.test('XmApi Integration Tests', async (t) => {
             expectedRequest: {
               method: 'GET',
               url: 'https://test.xmatters.com/api/xm/1/groups',
-              headers: {
-                'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'User-Agent': 'xmas/0.0.1 (Deno)',
-              },
+              headers: TestConstants.BASIC_AUTH_HEADERS,
             },
             mockedResponse: {
               status: 500,
-              headers: { 'Content-Type': 'application/json' },
               body: { error: 'Internal Server Error' },
             },
           },
@@ -590,12 +479,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
             expectedRequest: {
               method: 'GET',
               url: 'https://test.xmatters.com/api/xm/1/groups',
-              headers: {
-                'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'User-Agent': 'xmas/0.0.1 (Deno)',
-              },
+              headers: TestConstants.BASIC_AUTH_HEADERS,
             },
             mockedResponse: {
               status: 200,
@@ -629,9 +513,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
     await t.step('Max Retries Exceeded', async () => {
       return await withFakeTime(async (fakeTime) => {
         const api = new XmApi({
-          hostname: 'test.xmatters.com',
-          username: 'testuser',
-          password: 'testpass',
+          ...TestConstants.BASIC_CONFIG,
           httpClient: mockHttpClient,
           logger: mockLogger,
           maxRetries: 1,
@@ -642,16 +524,10 @@ Deno.test('XmApi Integration Tests', async (t) => {
             expectedRequest: {
               method: 'GET',
               url: 'https://test.xmatters.com/api/xm/1/groups',
-              headers: {
-                'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'User-Agent': 'xmas/0.0.1 (Deno)',
-              },
+              headers: TestConstants.BASIC_AUTH_HEADERS,
             },
             mockedResponse: {
               status: 500,
-              headers: { 'Content-Type': 'application/json' },
               body: { reason: 'Internal Server Error' },
             },
           },
@@ -660,16 +536,10 @@ Deno.test('XmApi Integration Tests', async (t) => {
             expectedRequest: {
               method: 'GET',
               url: 'https://test.xmatters.com/api/xm/1/groups',
-              headers: {
-                'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'User-Agent': 'xmas/0.0.1 (Deno)',
-              },
+              headers: TestConstants.BASIC_AUTH_HEADERS,
             },
             mockedResponse: {
               status: 500,
-              headers: { 'Content-Type': 'application/json' },
               body: { reason: 'Internal Server Error' },
             },
           },
@@ -703,23 +573,11 @@ Deno.test('XmApi Integration Tests', async (t) => {
 
   await t.step('Error Handling', async (t) => {
     await t.step('HTTP Error Response Structure', async () => {
-      const api = new XmApi({
-        hostname: 'test.xmatters.com',
-        username: 'testuser',
-        password: 'testpass',
-        httpClient: mockHttpClient,
-        logger: mockLogger,
-      });
       mockHttpClient.setReqRes([{
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups/nonexistent',
-          headers: {
-            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'xmas/0.0.1 (Deno)',
-          },
+          headers: TestConstants.BASIC_AUTH_HEADERS,
         },
         mockedResponse: {
           status: 404,
@@ -731,7 +589,7 @@ Deno.test('XmApi Integration Tests', async (t) => {
       // This tests a different scenario than network errors - here the server successfully
       // responds but with an error status code, so XmApiError should contain response details
       try {
-        await api.groups.getByIdentifier('nonexistent');
+        await runOfTheMillBasicAuthInstance.groups.getByIdentifier('nonexistent');
       } catch (error) {
         const apiError = error as XmApiError;
         expect(apiError).toBeInstanceOf(XmApiError);
@@ -748,30 +606,18 @@ Deno.test('XmApi Integration Tests', async (t) => {
     });
 
     await t.step('Network Error Handling', async () => {
-      const api = new XmApi({
-        hostname: 'test.xmatters.com',
-        username: 'testuser',
-        password: 'testpass',
-        httpClient: mockHttpClient,
-        logger: mockLogger,
-      });
       // Use mockedError to simulate network connection failure
       mockHttpClient.setReqRes([{
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups',
-          headers: {
-            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'xmas/0.0.1 (Deno)',
-          },
+          headers: TestConstants.BASIC_AUTH_HEADERS,
         },
         mockedError: new Error('Network connection failed'),
       }]);
       // MockHttpClient with mockedError will always reject, so we can test error handling directly
       try {
-        await api.groups.get();
+        await runOfTheMillBasicAuthInstance.groups.get();
       } catch (error) {
         const apiError = error as XmApiError;
         expect(apiError).toBeInstanceOf(XmApiError);
@@ -784,32 +630,19 @@ Deno.test('XmApi Integration Tests', async (t) => {
     });
 
     await t.step('Non-JSON Response Body Handling', async () => {
-      const api = new XmApi({
-        hostname: 'test.xmatters.com',
-        username: 'testuser',
-        password: 'testpass',
-        httpClient: mockHttpClient,
-        logger: mockLogger,
-      });
       mockHttpClient.setReqRes([{
         expectedRequest: {
           method: 'GET',
           url: 'https://test.xmatters.com/api/xm/1/groups/invalid',
-          headers: {
-            'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': 'xmas/0.0.1 (Deno)',
-          },
+          headers: TestConstants.BASIC_AUTH_HEADERS,
         },
         mockedResponse: {
           status: 400,
-          headers: { 'Content-Type': 'text/plain' },
           body: 'Invalid request format',
         },
       }]);
       try {
-        await api.groups.getByIdentifier('invalid');
+        await runOfTheMillBasicAuthInstance.groups.getByIdentifier('invalid');
       } catch (error) {
         const apiError = error as XmApiError;
         expect(apiError).toBeInstanceOf(XmApiError);
