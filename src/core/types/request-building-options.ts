@@ -1,4 +1,4 @@
-import type { QueryParams } from '../endpoint/query-params.ts';
+import type { QueryParams } from './query-params.ts';
 import type { Headers } from './http.ts';
 
 /**

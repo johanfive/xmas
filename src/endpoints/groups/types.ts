@@ -4,7 +4,7 @@ import type {
   SearchParams,
   SortOrder,
   StatusParams,
-} from '../../core/types/endpoint/query-params.ts';
+} from 'types/query-params.ts';
 
 /**
  * Represents a group in xMatters.

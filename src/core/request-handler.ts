@@ -1,4 +1,7 @@
-import type { Headers, HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
+import { DefaultHttpClient, defaultLogger } from './defaults/index.ts';
+import { RequestBuilder } from './request-builder.ts';
+import { XmApiError } from './errors.ts';
+import { AuthType, type MutableAuthState } from 'types/mutable-auth-state.ts';
 import {
   isAuthCodeConfig,
   isBasicAuthConfig,
@@ -6,17 +9,11 @@ import {
   type Logger,
   type TokenRefreshCallback,
   type XmApiConfig,
-} from './types/internal/config.ts';
-import { AuthType, type MutableAuthState } from './types/internal/mutable-auth-state.ts';
-import { XmApiError } from './errors.ts';
-import type { OAuth2TokenResponse } from './types/internal/oauth.ts';
-import { RequestBuilder } from './request-builder.ts';
-import type {
-  RequestBuildingOptions,
-  RequestOptions,
-} from './types/internal/request-building-options.ts';
-import { DefaultHttpClient, defaultLogger } from './defaults/index.ts';
+} from 'types/config.ts';
 import denoJson from '../../deno.json' with { type: 'json' };
+import type { Headers, HttpClient, HttpRequest, HttpResponse } from 'types/http.ts';
+import type { OAuth2TokenResponse } from 'types/oauth.ts';
+import type { RequestBuildingOptions, RequestOptions } from 'types/request-building-options.ts';
 
 export class RequestHandler {
   /** HTTP client for making requests */

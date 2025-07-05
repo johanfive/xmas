@@ -1,8 +1,8 @@
 import { expect } from 'std/expect/mod.ts';
 import { RequestBuilder } from './request-builder.ts';
-import type { RequestBuildingOptions } from './types/internal/request-building-options.ts';
-import type { Headers } from './types/internal/http.ts';
 import { XmApiError } from './errors.ts';
+import type { Headers } from 'types/http.ts';
+import type { RequestBuildingOptions } from 'types/request-building-options.ts';
 
 // Test helper to create RequestBuilder with standard configuration
 function createRequestBuilderTestSetup(options: {

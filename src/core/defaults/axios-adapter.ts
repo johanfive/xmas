@@ -1,4 +1,4 @@
-import type { Headers, HttpClient, HttpRequest, HttpResponse } from '../types/internal/http.ts';
+import type { Headers, HttpClient, HttpRequest, HttpResponse } from 'types/http.ts';
 
 // Minimal interface for what we need from an axios instance
 interface AxiosLike {

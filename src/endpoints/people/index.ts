@@ -1,12 +1,4 @@
 import { ResourceClient } from '../../core/resource-client.ts';
-import type { RequestHandler } from '../../core/request-handler.ts';
-import type { HttpResponse } from '../../core/types/internal/http.ts';
-import type {
-  EmptyHttpResponse,
-  PaginatedHttpResponse,
-  PaginatedResponse,
-} from '../../core/types/endpoint/response.ts';
-import type { Options } from '../../core/types/internal/request-building-options.ts';
 import type {
   CreatePerson,
   GetPersonParams,
@@ -14,6 +6,9 @@ import type {
   Person,
   UpdatePerson,
 } from './types.ts';
+import type { HttpResponse, PaginatedHttpResponse, PaginatedResponse } from 'types/http.ts';
+import type { Options } from 'types/request-building-options.ts';
+import type { RequestHandler } from '../../core/request-handler.ts';
 
 /**
  * Provides access to the people endpoints of the xMatters API.
@@ -81,7 +76,7 @@ export class PersonsEndpoint {
   delete(
     id: string,
     options?: Options,
-  ): Promise<EmptyHttpResponse> {
-    return this.http.delete<void>({ ...options, path: id });
+  ): Promise<HttpResponse<Person>> {
+    return this.http.delete<Person>({ ...options, path: id });
   }
 }

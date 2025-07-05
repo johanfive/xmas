@@ -1,10 +1,10 @@
-import type { XmApiConfig } from './core/types/internal/config.ts';
-import { validateConfig } from './core/utils/index.ts';
-import { RequestHandler } from './core/request-handler.ts';
 import { GroupsEndpoint } from './endpoints/groups/index.ts';
 import { IntegrationsEndpoint } from './endpoints/integrations/index.ts';
 import { OAuthEndpoint } from './endpoints/oauth/index.ts';
 import { PersonsEndpoint } from './endpoints/people/index.ts';
+import { RequestHandler } from './core/request-handler.ts';
+import { validateConfig } from './core/utils/index.ts';
+import type { XmApiConfig } from 'types/config.ts';
 
 /**
  * Main entry point for the xMatters API client.
@@ -13,6 +13,7 @@ import { PersonsEndpoint } from './endpoints/people/index.ts';
 export class XmApi {
   /** HTTP handler that manages all API requests */
   private readonly http: RequestHandler;
+
   public readonly groups: GroupsEndpoint;
   public readonly integrations: IntegrationsEndpoint;
   public readonly oauth: OAuthEndpoint;
@@ -32,8 +33,8 @@ export class XmApi {
 
 // Re-export only the types consumers need to implement
 // Dependency injection interfaces - consumers implement these
-export type { Logger, TokenRefreshCallback } from './core/types/internal/config.ts';
-export type { HttpClient } from './core/types/internal/http.ts';
+export type { Logger, TokenRefreshCallback } from 'types/config.ts';
+export type { HttpClient } from 'types/http.ts';
 // Export error class - consumers need to catch and handle these
 export { XmApiError } from './core/errors.ts';
 // For convenience

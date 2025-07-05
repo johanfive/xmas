@@ -1,6 +1,6 @@
+import { isAuthCodeConfig, isBasicAuthConfig, isOAuthConfig } from 'types/config.ts';
 import { XmApiError } from '../errors.ts';
-import type { XmApiConfig } from '../types/internal/config.ts';
-import { isAuthCodeConfig, isBasicAuthConfig, isOAuthConfig } from '../types/internal/config.ts';
+import type { XmApiConfig } from 'types/config.ts';
 
 /**
  * Validates that a hostname is a valid xMatters hostname.

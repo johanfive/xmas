@@ -1,6 +1,6 @@
-import type { ResourceOptions } from './types/internal/request-building-options.ts';
-import type { RequestHandler } from './request-handler.ts';
 import { XmApiError } from './errors.ts';
+import type { RequestHandler } from './request-handler.ts';
+import type { ResourceOptions } from 'types/request-building-options.ts';
 
 /**
  * A wrapper around RequestHandler that automatically prepends a base path to all requests.

@@ -1,4 +1,4 @@
-import type { HttpResponse } from './types/internal/http.ts';
+import type { HttpResponse } from 'types/http.ts';
 
 /**
  * Base class for all errors thrown by the xMatters API client.

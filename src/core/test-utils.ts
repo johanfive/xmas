@@ -1,28 +1,14 @@
-/**
- * @fileoverview Minimal test utilities for xMatters API library
- *
- * This module provides the bare essentials for testing:
- * - Mock HTTP client that prevents network calls and tracks requests
- * - Mock logger using Deno's stub functionality
- *
- * Testing Philosophy:
- * - Keep it SIMPLE and RELIABLE
- * - No HTTP requests should go over the wire during tests
- * - Mock only at the HTTP client boundary
- * - Test authors specify exact request-response pairs for predictability
- */
-
-import type { HttpClient, HttpRequest, HttpResponse } from './types/internal/http.ts';
-import type { Logger } from './types/internal/config.ts';
-import { FakeTime } from 'std/testing/time.ts';
 import { expect } from 'std/expect/mod.ts';
+import { FakeTime } from 'std/testing/time.ts';
+import type { HttpClient, HttpRequest, HttpResponse } from 'types/http.ts';
+import type { Logger } from 'types/config.ts';
 
 /**
  * Request-response pair for testing - HTTP response case
  * Set up expected requests and their mocked HTTP responses (any status code).
  */
 interface MockRequestWithResponse {
-  expectedRequest: Partial<HttpRequest>;
+  expectedRequest: HttpRequest;
   mockedResponse: Partial<HttpResponse>;
 }
 
@@ -34,8 +20,8 @@ interface MockRequestWithResponse {
  * (!) Not to be confused with HTTP error responses
  * (like 404, 500, etc.) which are still HTTP responses.
  */
-interface MockRequestError {
-  expectedRequest: Partial<HttpRequest>;
+interface MockRequestWithError {
+  expectedRequest: HttpRequest;
   mockedError: Error;
 }
 
@@ -43,7 +29,7 @@ interface MockRequestError {
  * Request-response pair for testing
  * Set up expected requests and their mocked responses or errors.
  */
-type MockRequestResponse = MockRequestWithResponse | MockRequestError;
+type MockRequestResponse = MockRequestWithResponse | MockRequestWithError;
 
 /**
  * Mock HTTP client that prevents network calls during tests.
@@ -64,12 +50,10 @@ export class MockHttpClient implements HttpClient {
     }
     const currentPair = this.requestResponsePairs[this.requests.length - 1];
     this.validateRequest(request, currentPair.expectedRequest);
-
     // Handle error case
     if ('mockedError' in currentPair) {
       return Promise.reject(currentPair.mockedError);
     }
-
     // Validate response case has required response
     if (!('mockedResponse' in currentPair) || !currentPair.mockedResponse) {
       return Promise.reject(
@@ -78,7 +62,6 @@ export class MockHttpClient implements HttpClient {
         ),
       );
     }
-
     // Handle response case
     const response: HttpResponse = {
       status: currentPair.mockedResponse.status || 200,
@@ -115,7 +98,7 @@ export class MockHttpClient implements HttpClient {
 
   private validateRequest(
     actualRequest: HttpRequest,
-    expectedRequest: Partial<HttpRequest>,
+    expectedRequest: HttpRequest,
   ): void {
     expect(actualRequest.method).toBe(expectedRequest.method);
     expect(actualRequest.url).toBe(expectedRequest.url);

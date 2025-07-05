@@ -1,4 +1,4 @@
-import type { Logger } from '../types/internal/config.ts';
+import type { Logger } from 'types/config.ts';
 
 export const defaultLogger: Logger = {
   debug: console.debug.bind(console),

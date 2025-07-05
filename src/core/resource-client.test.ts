@@ -1,8 +1,8 @@
 import { expect } from 'std/expect/mod.ts';
-import { ResourceClient } from './resource-client.ts';
-import { RequestHandler } from './request-handler.ts';
-import { XmApiError } from './errors.ts';
 import { MockHttpClient, MockLogger } from './test-utils.ts';
+import { RequestHandler } from './request-handler.ts';
+import { ResourceClient } from './resource-client.ts';
+import { XmApiError } from './errors.ts';
 
 // Helper to create ResourceClient with mock dependencies
 function createResourceClientTestSetup(basePath: string) {

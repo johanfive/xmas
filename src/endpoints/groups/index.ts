@@ -1,11 +1,4 @@
 import { ResourceClient } from '../../core/resource-client.ts';
-import type { RequestHandler } from '../../core/request-handler.ts';
-import type { HttpResponse } from '../../core/types/internal/http.ts';
-import type {
-  PaginatedHttpResponse,
-  PaginatedResponse,
-} from '../../core/types/endpoint/response.ts';
-import type { Options } from '../../core/types/internal/request-building-options.ts';
 import type {
   CreateGroup,
   GetGroupParams,
@@ -14,7 +7,10 @@ import type {
   GroupQuotas,
   UpdateGroup,
 } from './types.ts';
+import type { HttpResponse, PaginatedHttpResponse, PaginatedResponse } from 'types/http.ts';
+import type { Options } from 'types/request-building-options.ts';
 import type { Person } from '../people/types.ts';
+import type { RequestHandler } from '../../core/request-handler.ts';
 
 /**
  * Provides access to the groups endpoints of the xMatters API.

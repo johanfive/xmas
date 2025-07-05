@@ -1,7 +1,7 @@
 import { XmApiError } from './errors.ts';
-import type { Headers, HttpRequest } from './types/internal/http.ts';
-import type { QueryParams } from './types/endpoint/query-params.ts';
-import type { RequestBuildingOptions } from './types/internal/request-building-options.ts';
+import type { Headers, HttpRequest } from 'types/http.ts';
+import type { QueryParams } from 'types/query-params.ts';
+import type { RequestBuildingOptions } from 'types/request-building-options.ts';
 
 export class RequestBuilder {
   private readonly apiVersionPath = '/api/xm/1';
