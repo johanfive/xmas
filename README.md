@@ -2,11 +2,7 @@
 
 `xmas` for short 🎄
 
-A TypeScript/JavaScript library for interacting with the xMatt// xmApi will now automatically use
-OAuth tokens for all subsequent requests const groups = await xmApi.groups.get();
-
-The library will automatically start using the OAuth tokens and purge the username & password from
-memory for security.PI.
+A TypeScript/JavaScript library for interacting with the xMatters API (xmApi).
 
 - 🎄 **Zero dependencies** - Uses only native fetch API
 - 🔒 **Multiple auth methods** - Basic auth, OAuth, and authorization code flow
