@@ -106,8 +106,8 @@ await xmApi.oauth.obtainTokens({
 const groups = await xmApi.groups.get();
 ```
 
-> **Note:** 🔐 The library will automatically start using the OAuth tokens
-> and purge the username & password you instantiated it with.
+> **Note:** 🔐 The library will automatically start using the OAuth tokens and purge the username &
+> password you instantiated it with.
 
 ## Dependency injection
 
@@ -145,8 +145,8 @@ const config = {
 const xmApi = new XmApi(config);
 ```
 
-> **Note:** ⚠️ Only use this if your project already uses axios.
-> Otherwise, the default HTTP client (fetch) works great with zero dependencies.
+> **Note:** ⚠️ Only use this if your project already uses axios. Otherwise, the default HTTP client
+> (fetch) works great with zero dependencies.
 
 #### Custom Implementation
 

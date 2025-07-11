@@ -11,6 +11,10 @@
     "editor.defaultFormatter": "denoland.vscode-deno",
     "editor.formatOnSave": true
   },
+  "[yaml]": {
+    "editor.defaultFormatter": "denoland.vscode-deno",
+    "editor.formatOnSave": true
+  },
   "deno.enable": true,
   "deno.lint": true
 }
