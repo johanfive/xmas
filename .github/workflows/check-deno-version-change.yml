@@ -1,0 +1,38 @@
+name: Check Deno Version Change
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      - name: Compare version in deno.json
+        run: |
+          PR_VERSION=$(jq -r '.version' deno.json)
+
+          MAIN_DENO_JSON=$(curl -s -H "Authorization: token ${{ github.token }}" \
+            "https://api.github.com/repos/${{ github.repository }}/contents/deno.json?ref=main" | \
+            jq -r '.content' | base64 -d)
+
+          MAIN_VERSION=$(echo "$MAIN_DENO_JSON" | jq -r '.version')
+
+          echo "PR version: $PR_VERSION"
+          echo "Main version: $MAIN_VERSION"
+
+          if [ "$PR_VERSION" = "$MAIN_VERSION" ]; then
+            echo "❌ Version in deno.json has not changed compared to main"
+            exit 1
+          else
+            echo "✅ Version has changed from $MAIN_VERSION to $PR_VERSION"
+          fi
