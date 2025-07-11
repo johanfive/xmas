@@ -46,6 +46,10 @@ groupsResponse.body.data.forEach((group) => {
 });
 ```
 
+> Note: xMatters also offers the ability to authenticate via `API key`. See
+> [documentation here](https://help.xmatters.com/ondemand/user/apikeys.htm) and start using your API
+> key as username and its associated secret as password.
+
 ## OAuth Configuration
 
 If you already have OAuth tokens:
