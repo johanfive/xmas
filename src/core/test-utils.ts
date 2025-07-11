@@ -2,6 +2,7 @@ import { expect } from 'std/expect/mod.ts';
 import { FakeTime } from 'std/testing/time.ts';
 import type { HttpClient, HttpRequest, HttpResponse } from 'types/http.ts';
 import type { Logger } from 'types/config.ts';
+import denoJson from '../../deno.json' with { type: 'json' };
 
 /**
  * Request-response pair for testing - HTTP response case
@@ -196,6 +197,8 @@ export async function withFakeTime(testFn: (fakeTime: FakeTime) => Promise<void>
   }
 }
 
+const expectedUserAgent = `xmas/${denoJson.version} (Deno)`;
+
 /**
  * Reusable test constants for endpoint testing
  */
@@ -212,7 +215,7 @@ export const TestConstants = {
     'Authorization': 'Basic dGVzdHVzZXI6dGVzdHBhc3M=', // base64 of testuser:testpass
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'User-Agent': 'xmas/0.0.1 (Deno)', // Should match version in deno.json
+    'User-Agent': expectedUserAgent,
   } as const,
 
   /** Standard OAuth test configuration for creating RequestHandler instances */
@@ -228,12 +231,12 @@ export const TestConstants = {
     'Authorization': 'Bearer test-access-token',
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'User-Agent': 'xmas/0.0.1 (Deno)', // Should match version in deno.json
+    'User-Agent': expectedUserAgent,
   } as const,
 
   TOKEN_REQUEST_HEADERS: {
     'Content-Type': 'application/x-www-form-urlencoded',
     'Accept': 'application/json',
-    'User-Agent': 'xmas/0.0.1 (Deno)', // Should match version in deno.json
+    'User-Agent': expectedUserAgent,
   } as const,
 } as const;
