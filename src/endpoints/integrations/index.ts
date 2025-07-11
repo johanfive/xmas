@@ -22,7 +22,7 @@ export class IntegrationsEndpoint {
    *
    * @param url The URL of the integration trigger endpoint
    * @param payload The payload to send to the integration
-   * @returns The HTTP response containing a paginated list of integrations
+   * @returns The HTTP response containing a request ID
    * @throws {XmApiError} If the request fails
    */
   trigger(

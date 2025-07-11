@@ -2,6 +2,7 @@
   "name": "@johanfive/xmas",
   "version": "0.0.1",
   "exports": "./src/index.ts",
+  "license": "MIT",
   "imports": {
     "std/": "https://deno.land/std@0.224.0/",
     "types/": "./src/core/types/",
