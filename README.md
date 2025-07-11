@@ -1,13 +1,23 @@
 # xM API SDK JS
+
 `xmas` for short 🎄
 
-# Usage
-If your project already relies on the `axios` library,
-`xmas` will just use it to send http requests to `xmApi` and handle its responses.
+A TypeScript/JavaScript library for interacting with the xMatters API (xmApi).
 
-Your instantiation of a new Xmas object will only need your xM hostname and some auth credentials:
-```js
-const Xmas = require('xmas');
+- 🎄 **Zero dependencies** - Uses only native fetch API
+- 🔒 **Multiple auth methods** - Basic auth, OAuth, and authorization code flow
+- 🔧 **Dependency injection** - Bring your own HTTP client and logger
+- 📝 **Full TypeScript support** - Complete type safety and IntelliSense
+- 🔄 **Automatic token refresh** - Handles OAuth token lifecycle
+
+# Usage
+
+## Basic Authentication
+
+For simple username/password authentication:
+
+```ts
+import { XmApi } from '@johanfive/xmas';
 
 const config = {
   hostname: 'https://yourOrg.xmatters.com',
@@ -15,121 +25,338 @@ const config = {
   password: 'authingUserPassword',
 };
 
-const xmas = new Xmas(config);
+const xmApi = new XmApi(config);
 
-// Add a new group to your xMatters instance:
-const nuGroup = { targetName: 'API developers' };
-xmas.groups.create(nuGroup)
-  .then(handleSuccess)
-  .catch(handleError);
+// Create a new group in your xMatters instance:
+const group = { targetName: 'API developers' };
+const response = await xmApi.groups.save(group);
+
+// Access the HTTP response details:
+console.log('Status:', response.status);
+console.log('Headers:', response.headers);
+console.log('Created group:', response.body);
+
+// Get groups with pagination:
+const groupsResponse = await xmApi.groups.get({
+  query: { offset: 5, limit: 10 },
+});
+console.log('Total groups:', groupsResponse.body.total);
+groupsResponse.body.data.forEach((group) => {
+  console.log('Group:', group.targetName);
+});
 ```
 
-Alternative `config` object for **OAuth**
-(say when you have already generated tokens and safely stored them in your DB):
-```json
-{
-  "hostname": "https://yourOrg.xmatters.com",
-  "accessToken": "eyJ123...",
-  "refreshToken": "eyJ456...",
-  "clientId": "Your xMatters instance uuid"
+> Note: xMatters also offers the ability to authenticate via `API key`. See
+> [documentation here](https://help.xmatters.com/ondemand/user/apikeys.htm) and start using your API
+> key as username and its associated secret as password.
+
+## OAuth Configuration
+
+If you already have OAuth tokens:
+
+```ts
+const config = {
+  hostname: 'https://yourOrg.xmatters.com',
+  accessToken: 'eyJ123...',
+  refreshToken: 'eyJ456...',
+  clientId: 'your-client-id',
+};
+
+const xmApi = new XmApi(config);
+```
+
+## Authorization Code Flow
+
+If you have an authorization code from the OAuth flow:
+
+```ts
+const config = {
+  hostname: 'https://yourOrg.xmatters.com',
+  authorizationCode: 'auth_code_from_callback',
+  clientId: 'your-client-id',
+  clientSecret: 'your-client-secret', // Optional for enhanced security
+};
+
+const xmApi = new XmApi(config);
+// Obtain tokens before making API calls
+await xmApi.oauth.obtainTokens();
+```
+
+## Obtain OAuth tokens with basic auth
+
+```ts
+import { XmApi } from '@johanfive/xmas';
+
+const config = {
+  hostname: 'https://yourOrg.xmatters.com',
+  username: 'authingUserName',
+  password: 'authingUserPassword',
+  onTokenRefresh: (accessToken, refreshToken) => {
+    // Save tokens when they're obtained/refreshed
+    saveTokensToDatabase({ accessToken, refreshToken });
+  },
+};
+
+const xmApi = new XmApi(config);
+// Obtain tokens and automatically transition to OAuth
+await xmApi.oauth.obtainTokens({
+  clientId: 'your-client-id',
+});
+// xmApi will now automatically use OAuth tokens for all subsequent requests
+const groups = await xmApi.groups.get();
+```
+
+> **Note:** 🔐 The library will automatically start using the OAuth tokens and purge the username &
+> password you instantiated it with.
+
+## Dependency injection
+
+The library uses dependency injection to allow you to provide your own implementations for HTTP
+clients, loggers, and other dependencies.
+
+### Custom HTTP Client
+
+If you want to use your own HTTP client implementation:
+
+#### Using the Built-in Axios Adapter
+
+For projects that already use axios, you can use the provided adapter function:
+
+```ts
+import axios from 'axios';
+import { axiosAdapter, XmApi } from '@johanfive/xmas';
+
+// Create your axios instance with whatever config you need
+const axiosInstance = axios.create({
+  timeout: 10000,
+  proxy: {
+    host: 'proxy.company.com',
+    port: 8080,
+  },
+});
+
+const config = {
+  hostname: 'https://yourOrg.xmatters.com',
+  username: 'authingUserName',
+  password: 'authingUserPassword',
+  httpClient: axiosAdapter(axiosInstance),
+};
+
+const xmApi = new XmApi(config);
+```
+
+> **Note:** ⚠️ Only use this if your project already uses axios. Otherwise, the default HTTP client
+> (fetch) works great with zero dependencies.
+
+#### Custom Implementation
+
+For more advanced use cases, you can implement your own HTTP client:
+
+```ts
+import type { HttpClient, HttpRequest, HttpResponse } from '@johanfive/xmas';
+
+const myHttpClient: HttpClient = {
+  async send(request: HttpRequest): Promise<HttpResponse> {
+    // Your HTTP client implementation
+    const response = await yourHttpLibrary({
+      method: request.method,
+      url: request.url,
+      headers: request.headers,
+      body: request.body,
+    });
+
+    return {
+      status: response.status,
+      headers: response.headers,
+      body: response.data,
+    };
+  },
+};
+
+const config = {
+  hostname: 'https://yourOrg.xmatters.com',
+  username: 'authingUserName',
+  password: 'authingUserPassword',
+  httpClient: myHttpClient,
+};
+// Note: ⚠️ While your HTTP client should not throw on HTTP error status codes (4xx, 5xx),
+// the xmApi SDK itself WILL throw XmApiError instances when the xMatters API returns error responses.
+
+// The library philosophy is that generic HTTP clients should stay simple and predictable,
+// while SDKs leverage their deep knowledge of an API to provide clean
+// exception-based error handling in your application code.
+
+// The HTTP client simply returning the response when it has one, regardless of the status code,
+// enables the SDK to inspect HTTP error responses to:
+// - Format detailed error messages with full response context
+// - Implement smart retry logic (e.g., retry on 429/5xx, refresh tokens on 401)
+// - Provide consistent error handling across all HTTP clients
+```
+
+### Custom Logger
+
+The library uses `console` for logging by default, which works well for most applications. You only
+need to provide a custom logger if you want different behaviors.
+
+**To use your own logging library:**
+
+Most popular logging libraries (Winston, Pino, etc.) should be directly compatible:
+
+```ts
+const winston = require('winston');
+
+const config = {
+  hostname: 'https://yourOrg.xmatters.com',
+  username: 'authingUserName',
+  password: 'authingUserPassword',
+  logger: winston,
+};
+```
+
+Or if you need a custom wrapper:
+
+```ts
+import type { Logger } from '@johanfive/xmas';
+
+const myCustomLogger: Logger = {
+  debug: (message: string, ...args: unknown[]) => myLogLibrary.debug(message, ...args),
+  info: (message: string, ...args: unknown[]) => myLogLibrary.info(message, ...args),
+  warn: (message: string, ...args: unknown[]) => myLogLibrary.warn(message, ...args),
+  error: (message: string, ...args: unknown[]) => myLogLibrary.error(message, ...args),
+};
+```
+
+**To silence all logging:**
+
+If you prefer to completely disable logging (rather than configuring log levels in your logging
+library):
+
+```ts
+const silentLogger: Logger = {
+  debug: () => {},
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+};
+
+const config = {
+  hostname: 'https://yourOrg.xmatters.com',
+  username: 'authingUserName',
+  password: 'authingUserPassword',
+  logger: silentLogger,
+};
+```
+
+### Token Refresh Callback
+
+To handle OAuth token refresh events:
+
+```ts
+import type { TokenRefreshCallback } from '@johanfive/xmas';
+
+const onTokenRefresh: TokenRefreshCallback = async (accessToken, refreshToken) => {
+  // Save tokens to your database or secure storage
+  await saveTokensToDatabase({ accessToken, refreshToken });
+};
+
+const config = {
+  hostname: 'https://yourOrg.xmatters.com',
+  accessToken: 'current_access_token',
+  refreshToken: 'current_refresh_token',
+  clientId: 'your-client-id',
+  onTokenRefresh,
+};
+```
+
+## HTTP Client Interface
+
+The `HttpClient` interface that your custom implementation must satisfy:
+
+```ts
+interface HttpRequest {
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  url: string; // Fully qualified URL
+  headers?: Headers; // Key-value pairs of HTTP headers
+  body?: unknown; // Request body (will be serialized)
+  retryAttempt?: number; // Current retry attempt for logging
+}
+
+interface HttpResponse<T = unknown> {
+  body: T; // Parsed response body
+  status: number; // HTTP status code
+  headers: Headers; // Response headers
+}
+
+interface HttpClient {
+  send: (request: HttpRequest) => Promise<HttpResponse>;
 }
 ```
 
-## Obtain OAuth tokens
-```js
-const Xmas = require('xmas');
+**Note:** The `method` field is restricted to the HTTP methods that this library needs to interact
+with the xMatters API. Your HTTP client implementation can support additional methods (like
+`OPTIONS`, `HEAD`, etc.) - this restriction only applies to requests that the library will send to
+your client.
 
-const config = {
-  hostname: 'https://yourOrg.xmatters.com',
-  username: 'authingUserName',
-  password: 'authingUserPassword',
-};
+Your HTTP client receives a fully prepared request with:
 
-const xmas = new Xmas(config);
-xmas.getOauthTokens.byUsernamePassword()
-  .then(({ accessToken, refreshToken }) => saveToDb(accessToken, refreshToken))
-  .then(() => xmas.people.search('immediately uses the tokens, not the creds set in config'))
-  .catch(handleError);
-```
-`Xmas` will immediately start using the OAuth tokens and stop using the username & password
-you instantiated it with.
+- Complete URL (including query parameters)
+- All necessary headers (including authentication)
+- Serialized request body (if applicable)
 
-## Dependency injection
-If your project relies on an **HTTP client** *other* than `axios`,
-you will need to pass it in the `config` when you instantiate an Xmas:
-```js
-const config = {
-  hostname: 'https://yourOrg.xmatters.com',
-  username: 'authingUserName',
-  password: 'authingUserPassword',
-  httpClient: {
-    sendRequest: yourHttpClient,
-    successAdapter: () => {},
-    failureAdapter: () => {},
+The library uses the native `fetch` API by default, so you only need to provide a custom HTTP client
+if you have specific requirements (like using a different HTTP library or adding custom retry
+logic).
+
+## Error Handling
+
+The library throws `XmApiError` instances for API-related errors:
+
+```ts
+import { XmApiError } from '@johanfive/xmas';
+
+try {
+  const response = await xmApi.groups.save(group);
+} catch (error) {
+  if (error instanceof XmApiError) {
+    console.log('API Error:', error.message);
+    if (error.response) {
+      console.log('Status Code:', error.response.status);
+      console.log('Response Body:', error.response.body);
+      console.log('Response Headers:', error.response.headers);
+    }
+    // Access underlying cause if available
+    if (error.cause) {
+      console.log('Underlying error:', error.cause);
+    }
   }
-};
+}
 ```
 
-### httpClient.sendRequet
-Should have the following signature:
-```js
-({ method, url, headers, data }) => Promise
-```
-Where:
-+ `method` will be an HTTP method used to send the request (eg: 'GET', 'POST', 'DELETE')
-+ `url` will be the fully qualified url the request will be sent to
-(eg: 'https://yourOrg.xmatters.com/api/xm/1/people?firstName=peter&lastName=parker')
-+ `headers` will be a typical HTTP request headers object to send to xM API
-+ `data` (optional) will be the stringified payload to send to xM API
+## Configuration Options
 
-Your HTTP client should know what to do with those and must return a `promise`.
+All configuration options:
 
-### httpClient.successAdapter
-This is a function that will receive the response
-in the exact format your HTTP client usually returns it upon a successful request (2xx).
+```ts
+interface XmApiConfig {
+  // Required
+  hostname: string;
 
-Think the very first `.then()` called when your HTTP client promise `resolves`.
+  // Authentication (one of these sets required)
+  username?: string; // Basic auth
+  password?: string; // Basic auth
+  authorizationCode?: string; // Auth code flow
+  accessToken?: string; // OAuth
+  refreshToken?: string; // OAuth
+  clientId?: string; // OAuth/Auth code
+  clientSecret?: string; // Optional for enhanced security
 
-This function must *only* return the xmApi `payload`/`response body`.
+  // Optional dependencies
+  httpClient?: HttpClient; // Custom HTTP implementation
+  logger?: Logger; // Custom logging implementation
+  onTokenRefresh?: TokenRefreshCallback; // Handle token refresh events
 
-Here is an example of the adapter used for the axios HTTP client under the hood:
-```js
-const axiosSuccessAdapter = (res) => res.data;
-```
-
-### httpClient.failureAdapter
-This is a function that will receive the error
-in the exact format your HTTP client usually throws it upon a failed request (non 2xx).
-
-Think the `.catch()` called when your HTTP client promise `rejects`.
-
-This function must throw (rethrow, technically) an error object with both a `status` and a `payload` property attached to it.
-
-Here is an example of the adapter used for the axios HTTP client under the hood:
-```js
-const axiosFailureAdapter = (e) => {
-  const humanReadableMessage = e.response
-    ? `xM API responded with ${e.response.status} ${e.response.statusText}`
-    : 'Something went wrong and no response was received from xM API';
-  const error = new Error(humanReadableMessage);
-  error.status = e.response?.status;
-  error.payload = e.response?.data;
-  throw error;
-};
-```
-The human readable message can be omitted and the object thrown doesn't even have to be an Error
-instance, these are just nice things.
-What is important is that this function `throws`,
-and that the object thrown contains a `status` and a `payload` property.
-Where:
-+ `status` must be an *integer*: the http **status code** of the response
-+ `payload` must be the xM API **response body** if one was returned
-
-```sh
-# If all of this seems like more trouble than having to manage 1 more dependency in your project,
-# then you can simply run:
-npm i axios
-# and start using the SDK as is.
-
-# We just thought it would be nice not to arbitrarily impose yet another dependency on your project.
+  // Optional settings
+  defaultHeaders?: Headers; // Additional headers for all requests
+  maxRetries?: number; // Maximum retry attempts
+}
 ```
