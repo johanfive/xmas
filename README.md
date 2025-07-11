@@ -106,8 +106,8 @@ await xmApi.oauth.obtainTokens({
 const groups = await xmApi.groups.get();
 ```
 
-The library will automatically start using the OAuth tokens and purge the username & password you
-instantiated it with.
+> **Note:** 🔐 The library will automatically start using the OAuth tokens
+> and purge the username & password you instantiated it with.
 
 ## Dependency injection
 
@@ -124,7 +124,7 @@ For projects that already use axios, you can use the provided adapter function:
 
 ```ts
 import axios from 'axios';
-import { createAxiosAdapter, XmApi } from '@johanfive/xmas';
+import { axiosAdapter, XmApi } from '@johanfive/xmas';
 
 // Create your axios instance with whatever config you need
 const axiosInstance = axios.create({
@@ -139,14 +139,14 @@ const config = {
   hostname: 'https://yourOrg.xmatters.com',
   username: 'authingUserName',
   password: 'authingUserPassword',
-  httpClient: createAxiosAdapter(axiosInstance),
+  httpClient: axiosAdapter(axiosInstance),
 };
 
 const xmApi = new XmApi(config);
 ```
 
-> **Note:** Only use this if your project already uses axios. Otherwise, the default HTTP client
-> (fetch) works great with zero dependencies.
+> **Note:** ⚠️ Only use this if your project already uses axios.
+> Otherwise, the default HTTP client (fetch) works great with zero dependencies.
 
 #### Custom Implementation
 
@@ -179,11 +179,11 @@ const config = {
   password: 'authingUserPassword',
   httpClient: myHttpClient,
 };
-// Note: While your HTTP client should not throw on HTTP error status codes (4xx, 5xx),
+// Note: ⚠️ While your HTTP client should not throw on HTTP error status codes (4xx, 5xx),
 // the xmApi SDK itself WILL throw XmApiError instances when the xMatters API returns error responses.
 
 // The library philosophy is that generic HTTP clients should stay simple and predictable,
-// while the SDKs leverage their deep knowledge of an API to provide clean
+// while SDKs leverage their deep knowledge of an API to provide clean
 // exception-based error handling in your application code.
 
 // The HTTP client simply returning the response when it has one, regardless of the status code,
@@ -353,10 +353,10 @@ interface XmApiConfig {
   // Optional dependencies
   httpClient?: HttpClient; // Custom HTTP implementation
   logger?: Logger; // Custom logging implementation
+  onTokenRefresh?: TokenRefreshCallback; // Handle token refresh events
 
   // Optional settings
   defaultHeaders?: Headers; // Additional headers for all requests
   maxRetries?: number; // Maximum retry attempts
-  onTokenRefresh?: TokenRefreshCallback; // Handle token refresh events
 }
 ```
