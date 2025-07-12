@@ -23,12 +23,31 @@ const mockSingleGroupBody = {
   created: '2025-01-01T00:00:00.000Z',
 };
 
+const mockSinglePersonBody = {
+  id: 'test-person-id',
+  targetName: 'jdoe',
+  firstName: 'John',
+  lastName: 'Doe',
+  recipientType: 'PERSON',
+  status: 'ACTIVE',
+  created: '2025-01-01T00:00:00.000Z',
+};
+
 const mockPaginatedGroupsBody = {
   count: 1,
   total: 1,
   data: [mockSingleGroupBody],
   links: {
     self: '/api/xm/1/groups?limit=100&offset=0',
+  },
+};
+
+const mockPaginatedPeopleBody = {
+  count: 1,
+  total: 1,
+  data: [mockSinglePersonBody],
+  links: {
+    self: '/api/xm/1/groups/test-group-id/supervisors?limit=100&offset=0',
   },
 };
 
@@ -351,6 +370,85 @@ Deno.test('GroupsEndpoint', async (t) => {
         },
       }]);
       await groups.save(dynamicGroup);
+    });
+  });
+
+  await t.step('getSupervisors() - Get Group Supervisors', async (t) => {
+    await t.step('makes GET request with group ID', async () => {
+      mockHttpClient.setReqRes([{
+        expectedRequest: {
+          method: 'GET',
+          url: 'https://test.xmatters.com/api/xm/1/groups/test-group-id/supervisors',
+          headers: TestConstants.BASIC_AUTH_HEADERS,
+        },
+        mockedResponse: {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+          body: mockPaginatedPeopleBody,
+        },
+      }]);
+      await groups.getSupervisors('test-group-id');
+    });
+
+    await t.step('makes GET request with group targetName', async () => {
+      mockHttpClient.setReqRes([{
+        expectedRequest: {
+          method: 'GET',
+          url: 'https://test.xmatters.com/api/xm/1/groups/Oracle Administrators/supervisors',
+          headers: TestConstants.BASIC_AUTH_HEADERS,
+        },
+        mockedResponse: {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+          body: mockPaginatedPeopleBody,
+        },
+      }]);
+      await groups.getSupervisors('Oracle Administrators');
+    });
+
+    await t.step('makes GET request with custom headers', async () => {
+      mockHttpClient.setReqRes([{
+        expectedRequest: {
+          method: 'GET',
+          url: 'https://test.xmatters.com/api/xm/1/groups/test-group-id/supervisors',
+          headers: {
+            ...TestConstants.BASIC_AUTH_HEADERS,
+            'X-Custom-Header': 'custom-value',
+          },
+        },
+        mockedResponse: {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+          body: mockPaginatedPeopleBody,
+        },
+      }]);
+      await groups.getSupervisors('test-group-id', {
+        headers: {
+          'X-Custom-Header': 'custom-value',
+        },
+      });
+    });
+
+    await t.step('makes GET request with query parameters', async () => {
+      mockHttpClient.setReqRes([{
+        expectedRequest: {
+          method: 'GET',
+          url:
+            'https://test.xmatters.com/api/xm/1/groups/test-group-id/supervisors?limit=5&offset=10',
+          headers: TestConstants.BASIC_AUTH_HEADERS,
+        },
+        mockedResponse: {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+          body: mockPaginatedPeopleBody,
+        },
+      }]);
+      await groups.getSupervisors('test-group-id', {
+        query: {
+          limit: 5,
+          offset: 10,
+        },
+      });
     });
   });
 

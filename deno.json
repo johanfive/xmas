@@ -1,6 +1,6 @@
 {
   "name": "@johanfive/xmas",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "exports": "./src/index.ts",
   "license": "MIT",
   "imports": {
@@ -11,7 +11,8 @@
   "tasks": {
     "cache": "DENO_TLS_CA_STORE=system deno cache --reload src/**/*.ts",
     "sandbox": "DENO_TLS_CA_STORE=system deno run --allow-read --allow-net --env-file=sandbox/.env --allow-env sandbox/index.ts",
-    "sandbox:validate-docs": "DENO_TLS_CA_STORE=system deno run --allow-read --allow-net --env-file=sandbox/.env --allow-env sandbox/validate-docs.ts"
+    "sandbox:validate-docs": "DENO_TLS_CA_STORE=system deno run --allow-read --allow-net --env-file=sandbox/.env --allow-env sandbox/validate-docs.ts",
+    "bump": "deno run --allow-read --allow-write bump-version.ts"
   },
   "fmt": {
     "singleQuote": true,

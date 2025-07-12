@@ -90,11 +90,50 @@ async function testPreExistingOAuthTokens() {
   }
 }
 
+async function testGroupsSupervisors() {
+  console.log('\n=== Scenario 5: Test groups.getSupervisors ===');
+  const { hostname, username, password } = config.basicAuth;
+  if (!hostname || !username || !password) {
+    console.warn(
+      '[WARNING] groups.getSupervisors: Skipped (missing hostname, username, or password)',
+    );
+    return;
+  }
+  try {
+    const xm = new XmApi(config.basicAuth);
+    // First, get a list of groups to find one we can test with
+    const groupsResponse = await xm.groups.get({ query: { limit: 1 } });
+    console.log(
+      '[INFO] groups.getSupervisors: Found groups:',
+      groupsResponse.status,
+      groupsResponse.body,
+    );
+
+    if (groupsResponse.body.data && groupsResponse.body.data.length > 0) {
+      const firstGroup = groupsResponse.body.data[0];
+      const groupId = firstGroup.id || firstGroup.targetName;
+      console.log(`[INFO] groups.getSupervisors: Testing with group: ${groupId}`);
+
+      const supervisorsResponse = await xm.groups.getSupervisors(groupId, { query: { limit: 5 } });
+      console.log(
+        '[SUCCESS] groups.getSupervisors:',
+        supervisorsResponse.status,
+        supervisorsResponse.body,
+      );
+    } else {
+      console.log('[INFO] groups.getSupervisors: No groups found to test with');
+    }
+  } catch (err) {
+    printError('[ERROR] groups.getSupervisors:', err);
+  }
+}
+
 // Run all scenarios sequentially
 await testBasicAuthOnly();
 await testOauthViaBasicAuthWithExplicitClientId();
 await testPasswordGrantWithDiscovery();
 await testPreExistingOAuthTokens();
+await testGroupsSupervisors();
 
 function printError(context: string, err: unknown) {
   if (err instanceof Error) {
