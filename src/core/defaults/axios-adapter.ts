@@ -5,12 +5,12 @@ interface AxiosLike {
   (config: {
     url: string;
     method: string;
-    headers?: Record<string, string>;
+    headers?: Headers;
     data?: unknown;
     validateStatus?: () => boolean;
   }): Promise<{
     status: number;
-    headers: Record<string, unknown>;
+    headers: Headers;
     data: unknown;
   }>;
 }

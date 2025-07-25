@@ -197,7 +197,7 @@ export type GroupEmbedOptions =
  * Type for parameters used when retrieving a single group by identifier.
  * Supports embedding related objects in the response.
  */
-export interface GetGroupParams extends Record<string, unknown> {
+export interface GetGroupParams extends QueryParams {
   /**
    * Objects to embed in the response. Can be a single value or an array of values.
    * For new/undocumented embed options, use type assertion: 'newOption' as GroupEmbedOptions or any
