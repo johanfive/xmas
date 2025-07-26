@@ -19,8 +19,6 @@
 - `deno test` - Run all unit tests
 - `deno task cache` - Cache dependencies (handles corporate certificates)
 - `deno task sandbox` - Run sandbox for quick prototyping
-- `deno task sandbox:validate-docs` - Validate SDK behavior against official API documentation (see
-  Adding New Endpoints section)
 
 **Alternative Commands** (if not behind corporate firewall):
 
@@ -56,18 +54,23 @@ The library is designed to make adding new endpoints extremely easy. Each endpoi
 pattern:
 
 1. **Create a new directory** under `src/endpoints/` (e.g., `src/endpoints/people/`)
-2. **Define types** in `types.ts` for the endpoint's request/response models Suggested prompt:
-   ```
-   Use the official api documentation from #file:official-documentation.md to draft the types in #file:types.ts in a style that aligns with that of #file:types [<-- point to the groups endpoint types]
-   ```
+2. **Define types** in `types.ts` for the endpoint's request/response models
 3. **Implement the endpoint class** using `ResourceClient` for HTTP operations in `index.ts`
-   (standard pattern - oauth endpoint is a rare and justified exception)\
-   **Recommended**: Use the `xm-endpoint` VS Code snippet
+   (standard pattern - oauth endpoint is a rare and justified exception)
 4. **Export from the main index.ts** to make it available to consumers
 
-#### `xm-endpoint` VS Code Snippet
+✨ To streamline this process, you can use the `/new-endpoint` prompt with your AI assistant:
 
-A code snippet for kickstarting the content of an endpoint `index.ts` file.
+1. **Initiate the process**:
+   - In VS Code, start a new chat with your A.I. assistant and type `/new-endpoint` to begin.
+
+2. **Provide details**: The assistant will guide you through creating the necessary files and code,
+   asking for the endpoint name and its official documentation.
+
+#### `xm-endpoint` VS Code Snippet ❌✨
+
+If you're not in the mood for an A.I. prompt, there is a code snippet for kickstarting the content
+of an endpoint `index.ts` file.
 
 **Usage:**
 
@@ -77,26 +80,39 @@ A code snippet for kickstarting the content of an endpoint `index.ts` file.
    - `$2`: Auto-generated lowercase version for comments
    - `$3`: Auto-generated lowercase version for URL path (usually same as $2)
 
-#### Optional: Validate Against Official Documentation
+#### ✨ Validating API Behavior Against Documentation 📄
 
-As a maintainer, you can test whether the actual xMatters API behaves as documented:
+> **Prerequisites**: Before running validation scenarios, ensure you have configured your
+> credentials in `sandbox/config.ts` (see [sandbox readme here](sandbox/README.md)). These scenarios
+> will create and delete data, so it is crucial to use a development or test instance that you do
+> not mind writing to.
 
-1. Create a markdown file with the official API documentation for your endpoint
-2. Ask an AI to modify `sandbox/validate-docs.ts` to use your new SDK endpoint to make real API
-   calls
-3. Run `deno task sandbox:validate-docs` to discover discrepancies between documentation and actual
-   API behavior
+To `ensure the SDK aligns with the API's real-world behavior`, you can generate and run validation
+scenarios. This process uses a dedicated prompt to create a test file that calls the live API and
+logs its responses.
 
-This helps you adjust your SDK implementation to work with the real API, not just what the
-documentation claims.
+1. **Initiate the validation**:
+   - In VS Code, start a new chat with your A.I. assistant and type `/docs-vs-irl` to begin the
+     process.
 
-Here is a prompt you could use:
+2. **Provide details**: If you don't provide it, the assistant will ask you for:
+   - The method name to test (e.g., `save`, `getByIdentifier`).
+   - The endpoint name (e.g., `services`, `people`).
+   - The path to the markdown file containing the official documentation for the endpoint. (Use `#`
+     to add the file to the assistant's context).
 
-```
-I'm implementing a new endpoint for an xMatters API SDK. I have the official API documentation for the "/bla" endpoint in [tag .md or .txt file here].
+3. **Review the changes**: The assistant will:
+   - Create a new scenario file under `sandbox/scenarios/`.
+   - Modify `sandbox/index.ts` to import and run your new scenario.
 
-Please override the exisint validate-docs.ts file to use our SDK to make real API calls that will reveal any discrepancies between what the documentation claims and how the API actually behaves.
-```
+4. **Run the scenario**: Execute the sandbox to see the live API responses. The assistant is
+   supposed to suggest it, but you can also DIY:
+   ```bash
+   deno task sandbox
+   ```
+
+This process helps you discover discrepancies between the documentation and the actual API behavior,
+allowing you to build a more robust and reliable SDK based in truth and reality.
 
 ### Project Structure
 
