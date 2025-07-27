@@ -59,15 +59,46 @@ pattern:
    (standard pattern - oauth endpoint is a rare and justified exception)
 4. **Export from the main index.ts** to make it available to consumers
 
-✨ To streamline this process, you can use the `/new-endpoint` prompt with your AI assistant:
+✨ **AI-Assisted Development Workflow**
+
+To streamline endpoint creation, use these AI assistant prompts in sequence:
+
+1. **`/extract-xmapi-endpoint-documentation`** - Extract and format official API documentation into a markdown file for reference in subsequent prompts.
+
+2. **`/new-endpoint`** - Generate the initial endpoint implementation (types, class, and exports) based on the extracted documentation.
+
+3. **`/docs-vs-irl`** - Create validation scenarios that test the endpoint against real API responses, then update the endpoint code based on the observed real behavior to fix any discrepancies with the documentation.
+
+#### ✨ The `/extract-xmapi-endpoint-documentation` prompt
 
 1. **Initiate the process**:
-   - In VS Code, start a new chat with your A.I. assistant and type `/new-endpoint` to begin.
 
-2. **Provide details**: The assistant will guide you through creating the necessary files and code,
-   asking for the endpoint name and its official documentation.
+    In VS Code, start a new chat with your A.I. assistant and type:
+    ```sh
+    /extract-xmapi-endpoint-documentation <endpoint-online-doc>
+    # e.g.: /extract-xmapi-endpoint-documentation https://help.xmatters.com/xmapi/#shifts 
+    ```
 
-#### `xm-endpoint` VS Code Snippet ❌✨
+2. **Verify the output**
+
+    The LLM will be spinning its wheels for a short while but usually does a really good job in 1 shot. Still, proof-read a little.
+
+#### ✨ The `/new-endpoint` prompt
+
+1. **Initiate the process**:
+   
+    In VS Code, start a new chat with your A.I. assistant and type `/new-endpoint` to begin.
+
+2. **Provide details**:
+
+    The assistant will guide you through creating the necessary files and code, asking for the endpoint name and its official documentation if you didn't provide them in the prompt.
+
+    ```sh
+    /new-endpoint <endpoint-name> <endpoint-doc-file>
+    # e.g.: /new-endpoint shifts #file:xmapi-official-documentation.md
+    ```
+
+#### ❌✨ `xm-endpoint` VS Code Snippet
 
 If you're not in the mood for an A.I. prompt, there is a code snippet for kickstarting the content
 of an endpoint `index.ts` file.
