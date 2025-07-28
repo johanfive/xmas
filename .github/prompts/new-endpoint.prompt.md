@@ -26,7 +26,8 @@ Adhere to the development guidelines in the project's
 3. **Define Types**:
    - In the new `types.ts` file, draft the necessary TypeScript interfaces based on the provided API
      documentation.
-   - Leverage the reusable, common types available in `src/core/types/` whenever possible.
+   - Leverage the reusable, common types available in the `src/core/types/` directories whenever
+     possible.
    - Use an existing endpoint's `types.ts` file (e.g., `src/endpoints/services/types.ts`) as a
      reference to ensure a consistent style for properties and naming conventions.
 
@@ -77,14 +78,18 @@ Adhere to the development guidelines in the project's
      ```
 
    - **Common Methods**:
-     - While not a strict rule, most standard endpoints should implement the following core methods
-       if the API supports them:
+     - While not a strict rule, most standard endpoints should implement the following default
+       methods if the API supports them:
      - `get()`: To fetch a list of resources (paginated).
      - `getByIdentifier(id)`: To fetch a single resource by its ID or name.
      - `save(payload)`: Creates a new resource or updates an existing one. The payload determines
        the action: provide an `id` to update, or omit the `id` and provide a `targetName` (usually)
        to create.
      - `delete(id)`: To remove a resource.
+
+   - **type and lint check**:
+     - Ensure the new endpoint compiles without type errors and passes lint checks.
+     - Run `deno check` and `deno lint` to verify.
 
 5. **Export New Endpoint**:
    - Finally, open `src/index.ts` and add the new endpoint to the `XmApi` class.

@@ -7,12 +7,15 @@ description: 'Extract and format documentation for a specific xmAPI endpoint fro
 
 # Extract xmAPI Endpoint Documentation
 
-You are tasked with extracting and formatting documentation for a specific xmAPI endpoint from the official xMatters API documentation website.
+You are tasked with extracting and formatting documentation for a specific xmAPI endpoint from the
+official xMatters API documentation website.
 
 ## Input
 
 You will be provided with:
-1. A URL to a specific section of the xMatters API documentation (e.g., `https://help.xmatters.com/xmapi/#services`)
+
+1. A URL to a specific section of the xMatters API documentation (e.g.,
+   `https://help.xmatters.com/xmapi/#services`)
 2. The endpoint name (e.g., "services", "people", "groups", etc.)
 
 ## Output Format
@@ -20,13 +23,13 @@ You will be provided with:
 Generate a markdown file that follows this exact structure and formatting:
 
 ### Header Block
+
 ```markdown
-> This file's content is copy-pasted straight from the
-> [online doc here](ACTUAL_URL_PROVIDED), mistakes, typos and all. This is
-> meant to be used as a starting point to build the endpoint, and then as a reference to generate
-> validation scenarios in the sandbox. Once the documentation is confirmed accurate or proving to be
-> inaccurate, the relevant code implementation is rectified to match the reality of the API, but
-> this markdown file here will be left untouched.
+> This file's content is copy-pasted straight from the [online doc here](ACTUAL_URL_PROVIDED),
+> mistakes, typos and all. This is meant to be used as a starting point to build the endpoint, and
+> then as a reference to generate validation scenarios in the sandbox. Once the documentation is
+> confirmed accurate or proving to be inaccurate, the relevant code implementation is rectified to
+> match the reality of the API, but this markdown file here will be left untouched.
 ```
 
 ### Main Content Structure
@@ -58,18 +61,24 @@ Generate a markdown file that follows this exact structure and formatting:
 
 ## Requirements
 
-- **Preserve all original text exactly**: Copy all content verbatim, including any typos, formatting inconsistencies, or errors from the source
-- **Include complete descriptions**: For each API operation, copy the main description AND all additional explanatory paragraphs that follow
+- **Preserve all original text exactly**: Copy all content verbatim, including any typos, formatting
+  inconsistencies, or errors from the source
+- **Include complete descriptions**: For each API operation, copy the main description AND all
+  additional explanatory paragraphs that follow
 - **Maintain formatting**: Keep the same markdown structure, code block formatting, and indentation
 - **Include all examples**: Copy all curl commands and JSON responses exactly as shown
 - **Preserve parameter details**: Include all parameter descriptions, valid values, and constraints
-- **Keep structure consistent**: Follow the same heading hierarchy and section organization as shown in the reference
+- **Keep structure consistent**: Follow the same heading hierarchy and section organization as shown
+  in the reference
+- **Avoid markdown tables**: because `deno fmt` will break them, do NOT create tables.
 
 ## Quality Checklist
 
 Before submitting, ensure:
+
 - [ ] The header block is present with the correct URL
-- [ ] All HTTP operations are documented with complete descriptions (including all explanatory paragraphs)
+- [ ] All HTTP operations are documented with complete descriptions (including all explanatory
+      paragraphs)
 - [ ] Parameter tables are complete with types and descriptions
 - [ ] JSON examples are properly formatted in code blocks
 - [ ] The object definition section is included at the end
@@ -78,4 +87,11 @@ Before submitting, ensure:
 
 ## Example Reference
 
-Use the structure and formatting shown in the services endpoint documentation as your template for consistency across all endpoint documentation files.
+Use the structure and formatting shown in the services endpoint documentation as your template for
+consistency across all endpoint documentation files.
+
+### Out of Scope
+
+- **Actual implementation**: Do not create or modify any `.ts` file. This task is strictly for
+  documentation extraction. Writing the `index.ts`, `types.ts` and testing files will be handled in
+  a separate process.
